@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { X, Send, Sparkles, Bot, AlertCircle } from 'lucide-react';
 import { LabReport } from '../types';
 import { buildPatientContext } from '../lib/buildPatientContext';
@@ -32,22 +33,31 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
   onClose,
   focusedReport,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { id: 'welcome', role: 'assistant', text: WELCOME_TEXT },
+  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Track which report the current conversation belongs to so we can reset
+  // only when the user opens the chat for a different report — not on every close.
+  const activeReportIdRef = useRef<string | null | undefined>(undefined);
 
-  // Reset on open/close
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    const incomingId = focusedReport?.id ?? null;
+    const contextChanged = activeReportIdRef.current !== incomingId;
+
+    if (contextChanged) {
+      activeReportIdRef.current = incomingId;
       setMessages([{ id: 'welcome', role: 'assistant', text: WELCOME_TEXT }]);
       setInput('');
-      setTimeout(() => textareaRef.current?.focus(), 100);
-    } else {
-      setMessages([]);
     }
-  }, [isOpen]);
+
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }, [isOpen, focusedReport]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -187,24 +197,51 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
                 </div>
               )}
               <div
-                className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
+                className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-primary text-on-primary rounded-tr-sm'
+                    ? 'bg-primary text-on-primary rounded-tr-sm whitespace-pre-wrap'
                     : 'bg-surface-container text-on-surface rounded-tl-sm'
                 }`}
               >
-                {msg.text ||
-                  (msg.streaming && (
-                    <span className="inline-flex gap-1 py-0.5">
-                      {[0, 150, 300].map((delay) => (
-                        <span
-                          key={delay}
-                          className="w-1.5 h-1.5 bg-on-surface-variant/40 rounded-full animate-bounce"
-                          style={{ animationDelay: `${delay}ms` }}
-                        />
-                      ))}
-                    </span>
-                  ))}
+                {msg.role === 'user' ? (
+                  msg.text
+                ) : msg.text ? (
+                  <ReactMarkdown
+                    components={{
+                      h3: ({ children }) => (
+                        <p className="font-bold text-xs mt-3 mb-1 text-on-surface">{children}</p>
+                      ),
+                      h2: ({ children }) => (
+                        <p className="font-bold text-xs mt-3 mb-1 text-on-surface">{children}</p>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-on-surface">{children}</strong>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="list-disc list-outside ml-4 space-y-0.5 my-1">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="list-decimal list-outside ml-4 space-y-0.5 my-1">{children}</ol>
+                      ),
+                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                      p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                      hr: () => <hr className="my-2 border-outline-variant/40" />,
+                      em: ({ children }) => <em className="italic text-on-surface-variant">{children}</em>,
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
+                ) : msg.streaming ? (
+                  <span className="inline-flex gap-1 py-0.5">
+                    {[0, 150, 300].map((delay) => (
+                      <span
+                        key={delay}
+                        className="w-1.5 h-1.5 bg-on-surface-variant/40 rounded-full animate-bounce"
+                        style={{ animationDelay: `${delay}ms` }}
+                      />
+                    ))}
+                  </span>
+                ) : null}
               </div>
             </div>
           ))}

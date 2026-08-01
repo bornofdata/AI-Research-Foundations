@@ -5,12 +5,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Load .env.local first (takes precedence), then fall back to .env
 dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
 const PORT = process.env.API_PORT ?? 3001;
+const MODEL = process.env.GEMINI_MODEL ?? 'gemini-flash-latest';
 
 interface ChatTurn {
   role: 'user' | 'model';
@@ -59,24 +62,33 @@ app.post('/api/chat', async (req, res) => {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    const history = messages.slice(0, -1).map((m) => ({
+    // Build full contents array: system instruction as first user turn (compatible
+    // with all model versions), then the conversation history, then the latest message.
+    const systemTurn = {
+      role: 'user' as const,
+      parts: [{ text: `SYSTEM INSTRUCTIONS:\n${SYSTEM_INSTRUCTION(patientContext)}\n\nAcknowledge that you understand and are ready to help.` }],
+    };
+    const systemAck = {
+      role: 'model' as const,
+      parts: [{ text: "Understood. I'm ready to help Sarah with her health questions based on her complete health record." }],
+    };
+
+    const conversationTurns = messages.map((m) => ({
       role: m.role,
       parts: [{ text: m.text }],
     }));
 
-    const lastMessage = messages[messages.length - 1];
+    const contents = [systemTurn, systemAck, ...conversationTurns];
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.0-flash',
-      config: { systemInstruction: SYSTEM_INSTRUCTION(patientContext) },
-      history,
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents,
     });
 
-    const stream = await chat.sendMessageStream({ message: lastMessage.text });
-
-    for await (const chunk of stream) {
-      if (chunk.text) {
-        res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    for await (const chunk of response) {
+      const text = chunk.text;
+      if (text) {
+        res.write(`data: ${JSON.stringify({ text })}\n\n`);
       }
     }
 
@@ -90,5 +102,5 @@ app.post('/api/chat', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`CareConnect AI server running on port ${PORT}`);
+  console.log(`CareConnect AI server running on port ${PORT} using ${MODEL}`);
 });
