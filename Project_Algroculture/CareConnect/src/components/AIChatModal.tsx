@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { X, Send, Sparkles, Bot, AlertCircle } from 'lucide-react';
+import { X, Send, Sparkles, Bot, AlertCircle, Trash2 } from 'lucide-react';
 import { LabReport } from '../types';
 import { buildPatientContext } from '../lib/buildPatientContext';
 import { PATIENT_INFO } from '../data/mockData';
@@ -26,44 +26,87 @@ const SUGGESTED_QUESTIONS = [
   'What should I ask my doctor next visit?',
 ];
 
-const WELCOME_TEXT = `Hi ${PATIENT_INFO.name.split(' ')[0]}! I'm your AI health assistant. I have access to your lab results, appointments, and doctor messages. Ask me anything about your health data.`;
+const WELCOME_MESSAGE: ChatMessage = {
+  id: 'welcome',
+  role: 'assistant',
+  text: `Hi ${PATIENT_INFO.name.split(' ')[0]}! I'm your AI health assistant. I have access to your lab results, appointments, and doctor messages. Ask me anything about your health data.`,
+};
+
+// One localStorage key per context (global or per-report).
+const storageKey = (reportId: string | null) =>
+  `careconnect_chat_${reportId ?? 'global'}`;
+
+function loadMessages(reportId: string | null): ChatMessage[] {
+  try {
+    const stored = localStorage.getItem(storageKey(reportId));
+    if (stored) {
+      const parsed = JSON.parse(stored) as ChatMessage[];
+      // Strip any leftover streaming flags from a previous interrupted session
+      return parsed.map((m) => ({ ...m, streaming: false }));
+    }
+  } catch {
+    // Corrupt storage — fall through to default
+  }
+  return [WELCOME_MESSAGE];
+}
+
+function saveMessages(reportId: string | null, messages: ChatMessage[]) {
+  try {
+    // Never persist a message that is still streaming
+    const toSave = messages.filter((m) => !m.streaming);
+    localStorage.setItem(storageKey(reportId), JSON.stringify(toSave));
+  } catch {
+    // Storage quota exceeded — silently ignore
+  }
+}
 
 export const AIChatModal: React.FC<AIChatModalProps> = ({
   isOpen,
   onClose,
   focusedReport,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'welcome', role: 'assistant', text: WELCOME_TEXT },
-  ]);
+  const reportId = focusedReport?.id ?? null;
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadMessages(reportId));
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Track which report the current conversation belongs to so we can reset
-  // only when the user opens the chat for a different report — not on every close.
-  const activeReportIdRef = useRef<string | null | undefined>(undefined);
+  const activeReportIdRef = useRef<string | null>(reportId);
 
+  // When the modal opens with a different report, load that report's history.
   useEffect(() => {
     if (!isOpen) return;
 
     const incomingId = focusedReport?.id ?? null;
-    const contextChanged = activeReportIdRef.current !== incomingId;
-
-    if (contextChanged) {
+    if (activeReportIdRef.current !== incomingId) {
       activeReportIdRef.current = incomingId;
-      setMessages([{ id: 'welcome', role: 'assistant', text: WELCOME_TEXT }]);
+      setMessages(loadMessages(incomingId));
       setInput('');
     }
 
     setTimeout(() => textareaRef.current?.focus(), 100);
   }, [isOpen, focusedReport]);
 
+  // Persist messages to localStorage whenever they change.
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveMessages(activeReportIdRef.current, messages);
+    }
+  }, [messages]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   if (!isOpen) return null;
+
+  const clearChat = () => {
+    const fresh = [WELCOME_MESSAGE];
+    setMessages(fresh);
+    saveMessages(activeReportIdRef.current, fresh);
+    setConfirmClear(false);
+  };
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -79,7 +122,6 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
     setInput('');
     setLoading(true);
 
-    // Build history for server: skip the welcome message, map roles
     const history = [...messages, userMsg]
       .filter((m) => m.id !== 'welcome')
       .map((m) => ({
@@ -103,7 +145,6 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
       const decoder = new TextDecoder();
       let accumulated = '';
 
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -119,24 +160,19 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
             if (parsed.text) {
               accumulated += parsed.text;
               setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === asstId ? { ...m, text: accumulated } : m
-                )
+                prev.map((m) => (m.id === asstId ? { ...m, text: accumulated } : m))
               );
             }
           } catch {
-            // Partial JSON in chunk — ignore and wait for next chunk
+            // Partial JSON chunk — wait for next
           }
         }
       }
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : 'An unexpected error occurred.';
+      const msg = err instanceof Error ? err.message : 'An unexpected error occurred.';
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === asstId
-            ? { ...m, text: `Sorry, I ran into a problem: ${msg}`, streaming: false }
-            : m
+          m.id === asstId ? { ...m, text: `Sorry, I ran into a problem: ${msg}`, streaming: false } : m
         )
       );
     } finally {
@@ -160,7 +196,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-surface-container-lowest w-full sm:max-w-lg h-[88vh] sm:h-[620px] rounded-t-3xl sm:rounded-2xl border border-outline-variant shadow-2xl flex flex-col overflow-hidden">
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
+        {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="px-4 py-3 border-b border-outline-variant flex items-center justify-between bg-primary-container/30 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center shrink-0">
@@ -169,22 +205,51 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
             <div>
               <p className="font-bold text-sm text-on-surface">AI Health Assistant</p>
               <p className="text-[11px] text-on-surface-variant">
-                {focusedReport
-                  ? `Context: ${focusedReport.title}`
-                  : 'Full health record access'}
+                {focusedReport ? `Context: ${focusedReport.title}` : 'Full health record access'}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-1">
+            {/* Clear chat button */}
+            {confirmClear ? (
+              <div className="flex items-center gap-1.5 bg-error/10 rounded-full px-2 py-1">
+                <span className="text-[10px] text-error font-medium">Clear chat?</span>
+                <button
+                  onClick={clearChat}
+                  className="text-[10px] font-bold text-error hover:underline"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="text-[10px] text-on-surface-variant hover:underline"
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmClear(true)}
+                disabled={messages.length <= 1}
+                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors disabled:opacity-30"
+                aria-label="Clear chat"
+                title="Clear chat"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* ── Messages ────────────────────────────────────────────────────── */}
+        {/* ── Messages ──────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.map((msg) => (
             <div
@@ -208,21 +273,11 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
                 ) : msg.text ? (
                   <ReactMarkdown
                     components={{
-                      h3: ({ children }) => (
-                        <p className="font-bold text-xs mt-3 mb-1 text-on-surface">{children}</p>
-                      ),
-                      h2: ({ children }) => (
-                        <p className="font-bold text-xs mt-3 mb-1 text-on-surface">{children}</p>
-                      ),
-                      strong: ({ children }) => (
-                        <strong className="font-semibold text-on-surface">{children}</strong>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="list-disc list-outside ml-4 space-y-0.5 my-1">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal list-outside ml-4 space-y-0.5 my-1">{children}</ol>
-                      ),
+                      h3: ({ children }) => <p className="font-bold text-xs mt-3 mb-1 text-on-surface">{children}</p>,
+                      h2: ({ children }) => <p className="font-bold text-xs mt-3 mb-1 text-on-surface">{children}</p>,
+                      strong: ({ children }) => <strong className="font-semibold text-on-surface">{children}</strong>,
+                      ul: ({ children }) => <ul className="list-disc list-outside ml-4 space-y-0.5 my-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-outside ml-4 space-y-0.5 my-1">{children}</ol>,
                       li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                       p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
                       hr: () => <hr className="my-2 border-outline-variant/40" />,
@@ -248,7 +303,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
           <div ref={bottomRef} />
         </div>
 
-        {/* ── Suggested questions ─────────────────────────────────────────── */}
+        {/* ── Suggested questions ───────────────────────────────────────── */}
         {showSuggestions && (
           <div className="px-4 pb-2 shrink-0">
             <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide mb-2">
@@ -269,7 +324,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
           </div>
         )}
 
-        {/* ── Disclaimer ──────────────────────────────────────────────────── */}
+        {/* ── Disclaimer ────────────────────────────────────────────────── */}
         <div className="px-4 py-1.5 shrink-0">
           <div className="flex items-center gap-1.5 text-[10px] text-on-surface-variant bg-surface-container rounded-lg px-2.5 py-1.5">
             <AlertCircle className="w-3 h-3 shrink-0" />
@@ -277,12 +332,9 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({
           </div>
         </div>
 
-        {/* ── Input ───────────────────────────────────────────────────────── */}
+        {/* ── Input ─────────────────────────────────────────────────────── */}
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send(input);
-          }}
+          onSubmit={(e) => { e.preventDefault(); send(input); }}
           className="p-3 border-t border-outline-variant flex items-end gap-2 shrink-0"
         >
           <textarea
