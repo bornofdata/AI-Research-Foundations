@@ -8,8 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install dependencies
 npm install
 
-# Start dev server (http://localhost:3000)
+# Start Vite dev server (http://localhost:3000)
 npm run dev
+
+# Start Express AI server (port 3001) — required for AI chat to work
+npm run server
 
 # Type-check only (no emit)
 npm run lint
@@ -25,6 +28,8 @@ npm run clean
 ```
 
 **Setup:** Create `.env.local` with `GEMINI_API_KEY=<your-api-key>` before running.
+
+**Development:** Run `npm run dev` and `npm run server` in two separate terminals. Vite proxies all `/api` requests to the Express server on port 3001.
 
 ## Architecture
 
@@ -60,6 +65,24 @@ All data comes from `src/data/mockData.ts` — no real backend. The `@google/gen
 ### Types
 
 Centralized in `src/types.ts`. Key interfaces: `LabReport`, `TestParameter`, `Appointment`, `Message`, `NotificationItem`.
+
+### AI System
+
+```
+server.ts                       Express server, port 3001
+  └── POST /api/chat            Gemini 2.0 Flash streaming endpoint (SSE)
+src/lib/buildPatientContext.ts  Serialises all mock patient data into a
+                                structured prompt string for Gemini
+src/components/AIChatModal.tsx  Streaming chat UI, reads SSE from /api/chat
+```
+
+The AI system uses Gemini's large context window instead of a vector database — all patient data is injected into the system prompt on every request. This is fine for a single-patient MVP; at scale, swap `buildPatientContext` for a vector-retrieval call without changing any other code.
+
+The system prompt instructs Gemini to:
+- Explain results in plain language
+- Cross-reference across reports and historical trends
+- Prefix flags with `⚠️ Worth noting:` and test suggestions with `💡 Consider asking about:`
+- Always close with a medical disclaimer
 
 ### Styling
 

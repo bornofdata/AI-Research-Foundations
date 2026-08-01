@@ -5,7 +5,7 @@ import {
   Share2,
   ArrowUp,
   Check,
-  Send,
+  Sparkles,
   Download,
   History,
   CheckCircle,
@@ -221,7 +221,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
                 onClick={() => onOpenAskFollowUp(activeReport)}
                 className="text-secondary font-semibold text-xs flex items-center gap-1 hover:underline active:scale-95 transition-transform"
               >
-                Ask follow-up <Send className="w-3.5 h-3.5" />
+                Ask AI <Sparkles className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

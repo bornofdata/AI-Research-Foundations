@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { HealthTab } from './components/HealthTab';
@@ -9,8 +10,9 @@ import { MoreTab } from './components/MoreTab';
 import { TrendAnalysisModal } from './components/TrendAnalysisModal';
 import { PdfReportModal } from './components/PdfReportModal';
 import { AskFollowUpModal } from './components/AskFollowUpModal';
+import { AIChatModal } from './components/AIChatModal';
 import { NotificationsModal } from './components/NotificationsModal';
-import { NOTIFICATIONS, LAB_REPORTS } from './data/mockData';
+import { NOTIFICATIONS } from './data/mockData';
 import { TabType, LabReport, NotificationItem } from './types';
 
 export default function App() {
@@ -18,10 +20,14 @@ export default function App() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(NOTIFICATIONS);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  // Active Modals
+  // Report-detail modals
   const [activePdfReport, setActivePdfReport] = useState<LabReport | null>(null);
   const [activeTrendReport, setActiveTrendReport] = useState<LabReport | null>(null);
   const [activeAskFollowUpReport, setActiveAskFollowUpReport] = useState<LabReport | null>(null);
+
+  // AI chat — focusedReport=null means global (full patient context)
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [aiChatReport, setAiChatReport] = useState<LabReport | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -29,9 +35,13 @@ export default function App() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  const handleSendMessage = (text: string) => {
-    // Navigate to inbox tab or show feedback
+  const handleSendMessage = () => {
     setActiveTab('inbox');
+  };
+
+  const openAIChat = (report?: LabReport) => {
+    setAiChatReport(report ?? null);
+    setAiChatOpen(true);
   };
 
   return (
@@ -47,7 +57,7 @@ export default function App() {
         <HealthTab
           onOpenPdf={(report) => setActivePdfReport(report)}
           onOpenTrends={(report) => setActiveTrendReport(report)}
-          onOpenAskFollowUp={(report) => setActiveAskFollowUpReport(report)}
+          onOpenAskFollowUp={(report) => openAIChat(report)}
         />
       )}
 
@@ -58,6 +68,18 @@ export default function App() {
       {activeTab === 'inbox' && <InboxTab />}
 
       {activeTab === 'more' && <MoreTab />}
+
+      {/* Global AI Chat FAB — visible on all tabs */}
+      {!aiChatOpen && (
+        <button
+          onClick={() => openAIChat()}
+          className="fixed bottom-24 right-5 z-40 flex items-center gap-2 px-4 py-3 bg-primary text-on-primary rounded-full shadow-xl hover:bg-primary/90 active:scale-95 transition-all"
+          aria-label="Open AI Health Assistant"
+        >
+          <Sparkles className="w-5 h-5" />
+          <span className="text-xs font-bold">Ask AI</span>
+        </button>
+      )}
 
       {/* Modals & Overlays */}
       <NotificationsModal
@@ -91,6 +113,12 @@ export default function App() {
           onSendMessage={handleSendMessage}
         />
       )}
+
+      <AIChatModal
+        isOpen={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+        focusedReport={aiChatReport}
+      />
 
       {/* Fixed Bottom Navigation */}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
