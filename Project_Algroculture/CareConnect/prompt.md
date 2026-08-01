@@ -136,3 +136,7 @@ Please address the following within your pitch/proposal:
 1. How will your UI surface flagged/abnormal test results clearly without causing immediate panic for the patient?
 2. How do you plan to handle switching between multiple family profiles (e.g., managing a child's medical account)?
 3. How will the messaging layout visually frame expected response times to deter patients from using the app during real-world medical emergencies?
+
+
+## Link to AI Studio Mock up
+https://ai.studio/apps/5f7acbb6-4437-4465-bbc3-577cdf3d81d7
