@@ -1,0 +1,6 @@
+{
+  "name": "CareConnect",
+  "description": "Patient portal for lab results, health reports, trend analysis, and physician communication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

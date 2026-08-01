@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --color-surface: #fbf9f8;
+  --color-surface-dim: #dcd9d9;
+  --color-surface-bright: #fbf9f8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f6f3f2;
+  --color-surface-container: #f0eded;
+  --color-surface-container-high: #eae8e7;
+  --color-surface-container-highest: #e4e2e1;
+  --color-on-surface: #1b1c1c;
+  --color-on-surface-variant: #434652;
+  --color-inverse-surface: #303030;
+  --color-inverse-on-surface: #f3f0f0;
+  --color-outline: #737783;
+  --color-outline-variant: #c3c6d4;
+  --color-surface-tint: #2b5bb5;
+  --color-primary: #003178;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #0d47a1;
+  --color-on-primary-container: #a1bbff;
+  --color-inverse-primary: #b0c6ff;
+  --color-secondary: #286959;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #aef0dc;
+  --color-on-secondary-container: #2f6f5f;
+  --color-tertiary: #333537;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #4a4c4d;
+  --color-on-tertiary-container: #bbbcbd;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #d9e2ff;
+  --color-primary-fixed-dim: #b0c6ff;
+  --color-on-primary-fixed: #001945;
+  --color-on-primary-fixed-variant: #00429c;
+  --color-secondary-fixed: #aef0dc;
+  --color-secondary-fixed-dim: #93d3c0;
+  --color-on-secondary-fixed: #002019;
+  --color-on-secondary-fixed-variant: #045142;
+  --color-tertiary-fixed: #e1e3e4;
+  --color-tertiary-fixed-dim: #c5c7c8;
+  --color-on-tertiary-fixed: #191c1d;
+  --color-on-tertiary-fixed-variant: #454748;
+  --color-background: #fbf9f8;
+  --color-on-background: #1b1c1c;
+  --color-surface-variant: #e4e2e1;
+}
+
+body {
+  background-color: #fbf9f8;
+  color: #1b1c1c;
+  font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.custom-shadow {
+  box-shadow: 0 16px 24px -12px rgba(0, 49, 120, 0.08);
+}
+
+.scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+.scroll-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.range-indicator {
+  height: 8px;
+  background: linear-gradient(to right, #ba1a1a 0%, #286959 20%, #286959 80%, #ba1a1a 100%);
+  border-radius: 999px;
+  position: relative;
+}
+
+.range-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #003178;
+  border: 2px solid white;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
