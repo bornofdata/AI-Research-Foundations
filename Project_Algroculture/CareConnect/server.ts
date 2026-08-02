@@ -760,6 +760,47 @@ ${patientContext}` }],
   }
 });
 
+// ── POST /api/vaccine-recommendations ────────────────────────
+// Generate AI-personalized vaccine recommendations based on patient context.
+app.post('/api/vaccine-recommendations', async (req, res) => {
+  const { patientContext } = req.body as { patientContext: string };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.json({ recommendations: [] }); return; }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `You are a clinical immunization specialist. Based on the patient's health data, identify vaccines they should discuss with their doctor.
+Return a JSON array (no markdown, raw JSON only) with this structure:
+[{ "vaccine": "name", "priority": "recommended" | "consider" | "discuss", "reason": "one sentence why" }]
+
+Priority meanings:
+- recommended: Generally recommended for this patient's profile (age, conditions, medications)
+- consider: Worth discussing given specific health factors
+- discuss: Patient should mention at next visit
+
+Limit to 4-6 most relevant vaccines. Focus on adult vaccines: flu, COVID booster, pneumococcal, shingles (Zoster), Tdap, Hepatitis B, RSV. Cross-reference with conditions and immunosuppressive medications.
+
+Recommend vaccines for this patient: ${patientContext}`,
+        }],
+      }],
+    });
+
+    const raw = response.text ?? '[]';
+    const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    const recommendations = JSON.parse(cleaned) as Array<{ vaccine: string; priority: string; reason: string }>;
+    res.json({ recommendations });
+  } catch {
+    res.json({ recommendations: [] });
+  }
+});
+
 // ── GET /api/chat-history ─────────────────────────────────────
 // Load persisted chat history for the authenticated patient.
 app.get('/api/chat-history', async (req, res) => {

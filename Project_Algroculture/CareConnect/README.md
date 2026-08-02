@@ -38,6 +38,16 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 
 ## Features
 
+### Immunization & Vaccine Tracker (More tab)
+- Log vaccination history with vaccine name, date received, and optional next due date
+- Status badges auto-calculated: "Up to Date" (green) when no due date or due date is future; "Overdue" (red) when due date is past
+- Inline add form with a datalist of 10 common adult vaccines (Flu, COVID-19, Tdap, Pneumococcal, Shingles, Hepatitis B/A, MMR, HPV, RSV); collapses on save
+- AI recommends relevant vaccines based on the patient's health profile, conditions, and medications
+- Priority tiers: Recommended (filled primary badge) / Consider / Discuss — each with a one-sentence clinical reason
+- Cached daily in `localStorage` (`careconnect_vaccine_recs`); one-tap "Add" button on any AI suggestion pre-fills the add form
+- Refresh button regenerates AI recommendations on demand
+- Records stored in `localStorage` under `careconnect_vaccines`
+
 ### AI Symptom Checker & Triage (Home tab)
 - "Check Symptoms" quick-action tile on the Home tab opens a full-screen triage modal
 - Describe symptoms in free text or tap quick chips (Headache, Chest Pain, Shortness of Breath, Nausea, Fatigue, Dizziness, Fever, Abdominal Pain) to append them instantly
@@ -275,7 +285,8 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/appointment-request  AI-drafted appointment request message (JSON)
 ├── POST /api/lifestyle-tips       Streaming personalized nutrition & lifestyle recommendations (SSE)
 ├── POST /api/suggest-goals        AI-generated health goals (JSON)
-└── POST /api/symptom-check        Streaming clinical triage assessment from symptom description (SSE)
+├── POST /api/symptom-check        Streaming clinical triage assessment from symptom description (SSE)
+└── POST /api/vaccine-recommendations  AI-personalized vaccine recommendations (JSON)
 ├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn
 └── DELETE /api/chat-history       Clear chat history

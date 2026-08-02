@@ -31,6 +31,7 @@ import { HealthExportModal } from './HealthExportModal';
 import { MedInfoModal } from './MedInfoModal';
 import { RefillRequestModal } from './RefillRequestModal';
 import { DrugInteractionModal } from './DrugInteractionModal';
+import { VaccineTracker } from './VaccineTracker';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -448,6 +449,9 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
 
       {/* Medication Reminders */}
       <MedicationReminders medications={medications} onTestAlert={addAlert} />
+
+      {/* Immunization & Vaccine Tracker */}
+      <VaccineTracker patientContext={patientContext} />
 
       {/* Symptom Journal */}
       {recentLogs.length > 0 && (
