@@ -113,6 +113,14 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Personalized to the patient's health data (e.g., connects metformin to glucose levels for pre-diabetic patients)
 - Streamed response with markdown formatting; cached per medication within the session — reopening the same med is instant
 
+### AI Drug Interaction Checker (More tab)
+- "Check Drug Interactions" outlined button below the medication adherence section header
+- Enter any new drug or supplement to check against all active medications
+- AI returns: Safety Assessment (Safe / Use with Caution / Avoid), Interactions Found, What to Watch For, Recommendation
+- Color-coded safety badge (green/amber/red) prominently displayed above the full streamed response
+- Streamed response rendered with markdown formatting; cached per drug name within the session — rechecking the same drug is instant
+- Two-stage UI: input screen with active medication chips for context, then results screen with back navigation
+
 ### Medication Adherence Tracker (More tab)
 - Daily checklist of active medications — tap to mark taken
 - Progress shown as "X/Y taken" badge
@@ -243,6 +251,7 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/scan-report          Gemini vision — extract lab values from image (JSON)
 ├── POST /api/visit-prep           Streaming pre-visit AI prep summary (SSE)
 ├── POST /api/med-info             Streaming AI medication explainer (SSE)
+├── POST /api/drug-interactions    Streaming AI drug interaction checker (SSE)
 ├── POST /api/refill-request       AI-drafted prescription refill message (JSON)
 ├── POST /api/appointment-request  AI-drafted appointment request message (JSON)
 └── POST /api/suggest-goals        AI-generated health goals (JSON)

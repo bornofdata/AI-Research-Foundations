@@ -20,6 +20,7 @@ import {
   X,
   Download,
   Info,
+  ShieldCheck,
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { Medication, LabReport, Appointment } from '../types';
@@ -29,6 +30,7 @@ import { useMedicationReminders } from '../hooks/useMedicationReminders';
 import { HealthExportModal } from './HealthExportModal';
 import { MedInfoModal } from './MedInfoModal';
 import { RefillRequestModal } from './RefillRequestModal';
+import { DrugInteractionModal } from './DrugInteractionModal';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -266,6 +268,7 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
   const [exportOpen, setExportOpen] = useState(false);
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
   const [refillMed, setRefillMed] = useState<Medication | null>(null);
+  const [interactionOpen, setInteractionOpen] = useState(false);
 
   const toggleMed = (id: string) => {
     setTakenMeds((prev) => {
@@ -357,6 +360,15 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
               {takenCount}/{activeMeds.length} taken
             </span>
           </div>
+
+          {/* Drug Interaction Checker button */}
+          <button
+            onClick={() => setInteractionOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-outline-variant rounded-xl text-xs font-semibold text-on-surface-variant hover:border-primary/50 hover:text-primary transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Check Drug Interactions
+          </button>
 
           {takenCount === activeMeds.length && activeMeds.length > 0 && (
             <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 flex items-center gap-2">
@@ -571,6 +583,14 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
           setRefillMed(null);
           onRefillSent(message, medName);
         }}
+      />
+
+      {/* AI Drug Interaction Checker Modal */}
+      <DrugInteractionModal
+        isOpen={interactionOpen}
+        onClose={() => setInteractionOpen(false)}
+        medications={medications}
+        patientContext={patientContext}
       />
     </main>
   );

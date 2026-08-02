@@ -473,6 +473,63 @@ Explain ${medicationName} ${dosage} for this patient: ${patientContext}` }],
   }
 });
 
+// ── POST /api/drug-interactions ──────────────────────────────
+// Stream an AI drug interaction check for a new medication against current ones.
+app.post('/api/drug-interactions', async (req, res) => {
+  const { newDrug, currentMedications, patientContext } = req.body as {
+    newDrug: string;
+    currentMedications: string[];
+    patientContext: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are a clinical pharmacist reviewing a patient's medication list for drug interactions.
+The patient wants to take a new medication or supplement. Analyze potential interactions with their current medications.
+
+Structure your response with these exact markdown headings:
+## Safety Assessment
+## Interactions Found
+## What to Watch For
+## Recommendation
+
+In "Safety Assessment": Give a clear verdict — Safe, Use with Caution, or Avoid — with a one-sentence reason.
+In "Interactions Found": List each interaction (or "No significant interactions found" if none). For each, name the two drugs and the nature of the interaction.
+In "What to Watch For": Symptoms or lab values to monitor.
+In "Recommendation": Whether to proceed, consult doctor first, or avoid entirely.
+
+Be specific to the patient's health data. Keep clinical but accessible. Always end with:
+*Always consult your doctor or pharmacist before starting any new medication or supplement.*
+
+Check interactions between ${newDrug} and these current medications: ${currentMedications.join(', ')}. Patient context: ${patientContext}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── POST /api/refill-request ──────────────────────────────────
 // AI-draft a professional prescription refill request message.
 app.post('/api/refill-request', async (req, res) => {
