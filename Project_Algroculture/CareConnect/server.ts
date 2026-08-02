@@ -422,6 +422,57 @@ ${patientContext}` }],
   }
 });
 
+// ── POST /api/med-info ────────────────────────────────────────
+// Stream an AI explanation of a specific medication for the patient.
+app.post('/api/med-info', async (req, res) => {
+  const { medicationName, dosage, patientContext } = req.body as {
+    medicationName: string;
+    dosage: string;
+    patientContext: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are a clinical pharmacist assistant. The patient is asking about their prescribed medication.
+Provide a clear, plain-language explanation structured with these exact markdown headings:
+## What it's for
+## How it works
+## Common side effects
+## What to watch for
+## Tips for taking it
+
+Keep each section 2-3 sentences. Cross-reference the patient's health data where relevant (e.g., if they're pre-diabetic and taking metformin, mention the glucose connection). Always end with:
+*This information is for educational purposes only. Always follow your doctor's instructions.*
+
+Explain ${medicationName} ${dosage} for this patient: ${patientContext}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── POST /api/suggest-goals ───────────────────────────────────
 // Generate 3 personalized health goals from the patient's record.
 app.post('/api/suggest-goals', async (req, res) => {

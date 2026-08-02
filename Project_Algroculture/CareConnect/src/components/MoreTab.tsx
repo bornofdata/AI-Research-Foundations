@@ -19,6 +19,7 @@ import {
   Check,
   X,
   Download,
+  Info,
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { Medication, LabReport, Appointment } from '../types';
@@ -26,6 +27,7 @@ import { loadSymptomLog } from './SymptomLogModal';
 import { MedicationReminders } from './MedicationReminders';
 import { useMedicationReminders } from '../hooks/useMedicationReminders';
 import { HealthExportModal } from './HealthExportModal';
+import { MedInfoModal } from './MedInfoModal';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -250,15 +252,17 @@ interface MoreTabProps {
   toggleTheme: () => void;
   labReports: LabReport[];
   appointments: Appointment[];
+  patientContext: string;
 }
 
-export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, toggleTheme, labReports, appointments }) => {
+export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, toggleTheme, labReports, appointments, patientContext }) => {
   const { signOut } = useClerk();
   const activeMeds = medications.filter((m) => m.active);
   const [takenMeds, setTakenMeds] = useState<Record<string, boolean>>(loadAdherence);
   const recentLogs = loadSymptomLog().slice(0, 3);
   const { dueAlerts, clearAlert, addAlert } = useMedicationReminders();
   const [exportOpen, setExportOpen] = useState(false);
+  const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
 
   const toggleMed = (id: string) => {
     setTakenMeds((prev) => {
@@ -362,40 +366,58 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
             {activeMeds.map((med) => {
               const taken = !!takenMeds[med.id];
               return (
-                <button
+                <div
                   key={med.id}
-                  onClick={() => toggleMed(med.id)}
-                  className={`w-full p-4 rounded-xl border flex items-center gap-3 text-left transition-all active:scale-[0.99] ${
+                  className={`w-full rounded-xl border flex items-center gap-3 transition-all ${
                     taken
                       ? 'bg-emerald-50 border-emerald-200'
                       : 'bg-surface-container-lowest border-outline-variant'
                   }`}
                 >
-                  {taken
-                    ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    : <Circle className="w-5 h-5 text-outline shrink-0" />
-                  }
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold text-sm ${taken ? 'text-emerald-800 line-through' : 'text-on-surface'}`}>
-                      {med.name}
-                    </p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
-                      {med.dosage} · {med.frequency}
-                    </p>
-                    {med.notes && (
-                      <p className="text-[10px] text-on-surface-variant/70 mt-1 italic">{med.notes}</p>
-                    )}
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-1 ${
-                    taken ? 'bg-emerald-100 text-emerald-700' : 'bg-secondary-container text-on-secondary-container'
-                  }`}>
-                    {taken ? 'Taken' : 'Pending'}
-                  </span>
-                </button>
+                  {/* Main tap area — toggles adherence */}
+                  <button
+                    onClick={() => toggleMed(med.id)}
+                    className="flex-1 p-4 flex items-center gap-3 text-left active:scale-[0.99] transition-all"
+                  >
+                    {taken
+                      ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      : <Circle className="w-5 h-5 text-outline shrink-0" />
+                    }
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-sm ${taken ? 'text-emerald-800 line-through' : 'text-on-surface'}`}>
+                        {med.name}
+                      </p>
+                      <p className="text-xs text-on-surface-variant mt-0.5">
+                        {med.dosage} · {med.frequency}
+                      </p>
+                      {med.notes && (
+                        <p className="text-[10px] text-on-surface-variant/70 mt-1 italic">{med.notes}</p>
+                      )}
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-1 ${
+                      taken ? 'bg-emerald-100 text-emerald-700' : 'bg-secondary-container text-on-secondary-container'
+                    }`}>
+                      {taken ? 'Taken' : 'Pending'}
+                    </span>
+                  </button>
+
+                  {/* Info button — opens MedInfoModal */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedMed(med);
+                    }}
+                    className="p-3 pr-4 text-on-surface-variant hover:text-primary transition-colors shrink-0"
+                    aria-label={`Info about ${med.name}`}
+                    title={`Learn about ${med.name}`}
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </div>
               );
             })}
           </div>
-          <p className="text-[10px] text-on-surface-variant text-center">Tap a medication to mark it as taken · Resets daily</p>
+          <p className="text-[10px] text-on-surface-variant text-center">Tap a medication to mark it as taken · Tap ℹ for AI info · Resets daily</p>
         </section>
       )}
 
@@ -516,6 +538,14 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
         medications={medications}
         labReports={labReports}
         appointments={appointments}
+      />
+
+      {/* AI Medication Info Modal */}
+      <MedInfoModal
+        isOpen={!!selectedMed}
+        onClose={() => setSelectedMed(null)}
+        medication={selectedMed}
+        patientContext={patientContext}
       />
     </main>
   );

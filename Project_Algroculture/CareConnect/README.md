@@ -72,6 +72,12 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - "Copy" button copies a one-line emergency summary to the clipboard (e.g. "Blood Type: A+ | Allergies: Penicillin | Emergency Contact: John Jenkins (555-0100)")
 - Data stored in `localStorage` under `careconnect_emergency_card`; defaults pre-populated for demo
 
+### AI Medication Explainer (More tab)
+- Tap the ℹ info button on any medication in the adherence list to get an AI-generated explanation
+- Covers: what it treats, how it works, common side effects, what to watch for, and tips for taking it
+- Personalized to the patient's health data (e.g., connects metformin to glucose levels for pre-diabetic patients)
+- Streamed response with markdown formatting; cached per medication within the session — reopening the same med is instant
+
 ### Medication Adherence Tracker (More tab)
 - Daily checklist of active medications — tap to mark taken
 - Progress shown as "X/Y taken" badge
@@ -201,6 +207,7 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/smart-alerts         AI-generated health alerts (JSON)
 ├── POST /api/scan-report          Gemini vision — extract lab values from image (JSON)
 ├── POST /api/visit-prep           Streaming pre-visit AI prep summary (SSE)
+├── POST /api/med-info             Streaming AI medication explainer (SSE)
 └── POST /api/suggest-goals        AI-generated health goals (JSON)
 ├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn

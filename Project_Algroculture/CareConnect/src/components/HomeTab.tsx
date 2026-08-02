@@ -7,6 +7,7 @@ import {
   Activity,
   FileText,
   NotebookPen,
+  History,
 } from 'lucide-react';
 import { TabType, Appointment, LabReport } from '../types';
 import { AIHealthBrief } from './AIHealthBrief';
@@ -21,6 +22,7 @@ interface HomeTabProps {
   onNavigateToTab: (tab: TabType) => void;
   patientContext: string;
   onOpenSymptomLog: () => void;
+  onOpenTimeline: () => void;
 }
 
 function computeHealthScore(labReports: LabReport[]) {
@@ -35,7 +37,7 @@ function computeHealthScore(labReports: LabReport[]) {
   return { score, label, color, ring };
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline }) => {
   const nextAppointment = appointments.find((a) => a.status === 'upcoming');
   const healthScore = computeHealthScore(labReports);
 
@@ -137,6 +139,19 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
             <div>
               <h3 className="font-bold text-sm text-on-surface">Log Today's Symptoms</h3>
               <p className="text-xs text-on-surface-variant">Track how you feel between appointments</p>
+            </div>
+          </button>
+
+          <button
+            onClick={onOpenTimeline}
+            className="col-span-2 p-4 bg-surface-container rounded-2xl border border-outline-variant/60 text-left hover:border-primary/50 transition-all flex items-center gap-4 group"
+          >
+            <div className="w-10 h-10 bg-primary-container text-on-primary-container rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <History className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-on-surface">View Health Timeline</h3>
+              <p className="text-xs text-on-surface-variant">All health events in one chronological feed</p>
             </div>
           </button>
         </div>

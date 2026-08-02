@@ -17,6 +17,7 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { ScanReportModal } from './components/ScanReportModal';
 import { VisitPrepModal } from './components/VisitPrepModal';
 import { SymptomLogModal } from './components/SymptomLogModal';
+import { TimelineModal } from './components/TimelineModal';
 import { LabCompareModal } from './components/LabCompareModal';
 import { SignInPage } from './components/SignInPage';
 import { usePatientData } from './hooks/usePatientData';
@@ -46,6 +47,7 @@ function AppShell() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [prepAppointment, setPrepAppointment] = useState<Appointment | null>(null);
   const [symptomLogOpen, setSymptomLogOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
 
   // Build patient context once; passed to AI-powered components
   const patientContext = useMemo(
@@ -134,7 +136,7 @@ function AppShell() {
         />
       )}
       {activeTab === 'inbox' && <InboxTab messages={messages} patientContext={patientContext} />}
-      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} isDark={isDark} toggleTheme={toggleTheme} labReports={labReports} appointments={appointments} />}
+      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} isDark={isDark} toggleTheme={toggleTheme} labReports={labReports} appointments={appointments} patientContext={patientContext} />}
 
       {/* Global AI FAB */}
       {!aiChatOpen && (
