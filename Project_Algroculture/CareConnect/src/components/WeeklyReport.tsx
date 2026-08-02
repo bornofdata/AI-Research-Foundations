@@ -307,18 +307,6 @@ export const WeeklyReport: React.FC<WeeklyReportProps> = ({
   const sections = parseSections(content);
   const activeTabMeta = TABS.find((t) => t.key === activeTab)!;
   const sectionContent = sections[activeTab] ?? '';
-
-  // Render bullets or paragraph text (priority tab has prose, others have bullets)
-  const bullets = sectionContent
-    .split('\n')
-    .filter((line) => line.trim().startsWith('- '))
-    .map((line) => line.trim().slice(2).trim());
-
-  const proseText = sectionContent
-    .split('\n')
-    .filter((line) => !line.trim().startsWith('- ') && line.trim() !== '')
-    .join(' ');
-
   const sectionReady = !!sectionContent;
   const isStreaming = loading && !!content;
 
@@ -401,75 +389,36 @@ export const WeeklyReport: React.FC<WeeklyReportProps> = ({
 
             {/* Section content */}
             {sectionReady && (
-              <>
-                {/* Bullet list (wins / watch tabs) */}
-                {bullets.length > 0 && (
-                  <ul className="space-y-0">
-                    {bullets.map((bullet, idx) => (
-                      <li
-                        key={idx}
-                        className="text-sm text-on-surface leading-relaxed py-1.5 border-b border-outline-variant/30 last:border-0 flex gap-2"
-                      >
-                        <span
-                          className={`mt-[7px] w-1.5 h-1.5 rounded-full shrink-0 ${activeTabMeta.dot}`}
-                        />
-                        <span className="flex-1 min-w-0">
-                          <ReactMarkdown
-                            components={{
-                              p: ({ children }) => <span>{children}</span>,
-                              strong: ({ children }) => <strong className="font-semibold text-on-surface">{children}</strong>,
-                              em: ({ children }) => <em className="italic">{children}</em>,
-                            }}
-                          >
-                            {bullet}
-                          </ReactMarkdown>
-                        </span>
+              <div className="space-y-0">
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => (
+                      <p className="text-sm text-on-surface leading-relaxed mb-2 last:mb-0">{children}</p>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold text-on-surface">{children}</strong>
+                    ),
+                    em: ({ children }) => (
+                      <em className="italic text-on-surface-variant">{children}</em>
+                    ),
+                    ul: ({ children }) => <ul className="space-y-0 my-0">{children}</ul>,
+                    li: ({ children }) => (
+                      <li className="text-sm text-on-surface leading-relaxed py-1.5 border-b border-outline-variant/30 last:border-0 flex gap-2">
+                        <span className={`mt-[7px] w-1.5 h-1.5 rounded-full shrink-0 ${activeTabMeta.dot}`} />
+                        <span className="flex-1 min-w-0">{children}</span>
                       </li>
-                    ))}
-                    {isStreaming && (
-                      <li className="flex items-center gap-2 py-1.5 text-xs text-on-surface-variant">
-                        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin shrink-0" />
-                        Generating…
-                      </li>
-                    )}
-                  </ul>
-                )}
-
-                {/* Prose text (overview / priority tabs) */}
-                {bullets.length === 0 && proseText && (
-                  <div className={`text-sm leading-relaxed ${activeTabMeta.text}`}>
-                    <ReactMarkdown
-                      components={{
-                        p: ({ children }) => <p className="text-sm text-on-surface leading-relaxed mb-2 last:mb-0">{children}</p>,
-                        strong: ({ children }) => <strong className="font-semibold text-on-surface">{children}</strong>,
-                        em: ({ children }) => <em className="italic">{children}</em>,
-                        ul: ({ children }) => <ul className="space-y-1 my-1">{children}</ul>,
-                        li: ({ children }) => (
-                          <li className="flex gap-2 text-sm text-on-surface leading-relaxed">
-                            <span className={`mt-[7px] w-1.5 h-1.5 rounded-full shrink-0 ${activeTabMeta.dot}`} />
-                            <span>{children}</span>
-                          </li>
-                        ),
-                      }}
-                    >
-                      {proseText}
-                    </ReactMarkdown>
-                    {isStreaming && (
-                      <span className="inline-flex items-center gap-1 ml-2 text-on-surface-variant text-xs">
-                        <span className="w-2 h-2 bg-primary rounded-full animate-pulse inline-block" />
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Section exists but body still arriving */}
-                {bullets.length === 0 && !proseText && (
-                  <div className="flex items-center gap-2 text-xs text-on-surface-variant py-1">
+                    ),
+                  }}
+                >
+                  {sectionContent}
+                </ReactMarkdown>
+                {isStreaming && (
+                  <div className="flex items-center gap-2 py-1.5 text-xs text-on-surface-variant">
                     <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin shrink-0" />
                     Generating…
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
 
