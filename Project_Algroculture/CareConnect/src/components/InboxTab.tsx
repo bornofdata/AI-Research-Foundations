@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { Send, User, CheckCircle2, Sparkles, MessageSquare } from 'lucide-react';
-import { INITIAL_MESSAGES, DR_EMILY_CHEN, PATIENT_INFO } from '../data/mockData';
+import { DR_EMILY_CHEN, PATIENT_INFO } from '../data/mockData';
 import { Message } from '../types';
 
-export const InboxTab: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+interface InboxTabProps {
+  messages: Message[];
+}
+
+export const InboxTab: React.FC<InboxTabProps> = ({ messages: initialMessages }) => {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [newMessageText, setNewMessageText] = useState('');
   const [isDoctorTyping, setIsDoctorTyping] = useState(false);
 

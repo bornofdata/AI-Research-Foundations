@@ -5,17 +5,18 @@ import {
   APPOINTMENTS,
   HISTORICAL_TRENDS,
 } from '../data/mockData';
-import { LabReport } from '../types';
+import { LabReport, Medication } from '../types';
 
 /**
- * Serialises all patient data into a structured text block suitable for
- * inclusion in a Gemini system prompt. Keeps the server lean — no vector DB
- * needed while the dataset fits comfortably within Gemini's context window.
- *
- * When the app connects to a real backend, swap the imports above for API
- * calls and this function signature stays the same.
+ * Serialises all patient data into a structured text block for the Gemini
+ * system prompt. Accepts optional real data from Supabase; falls back to
+ * mock data for any argument not provided.
  */
-export function buildPatientContext(focusedReport?: LabReport): string {
+export function buildPatientContext(
+  focusedReport?: LabReport,
+  medications?: Medication[],
+  historicalTrends?: unknown[],
+): string {
   const lines: string[] = [];
 
   // ── Patient profile ──────────────────────────────────────────────────────
@@ -44,9 +45,21 @@ export function buildPatientContext(focusedReport?: LabReport): string {
     }
   }
 
+  // ── Medications ──────────────────────────────────────────────────────────
+  const meds = medications ?? [];
+  if (meds.length > 0) {
+    lines.push('\n## CURRENT MEDICATIONS');
+    for (const m of meds) {
+      const status = m.active ? 'Active' : `Ended ${m.endedAt}`;
+      const note = m.notes ? ` | Note: ${m.notes}` : '';
+      lines.push(`  • ${m.name} ${m.dosage} ${m.frequency} [${status}] — Prescribed by ${m.prescribingDoctor}${note}`);
+    }
+  }
+
   // ── Historical metabolic trends ──────────────────────────────────────────
+  const trends = (historicalTrends ?? HISTORICAL_TRENDS) as typeof HISTORICAL_TRENDS;
   lines.push('\n## HISTORICAL METABOLIC TRENDS');
-  for (const t of HISTORICAL_TRENDS) {
+  for (const t of trends) {
     lines.push(
       `  ${t.date}: Glucose ${t.glucose} mg/dL | A1C ${t.a1c}% | Sodium ${t.sodium} mmol/L | Potassium ${t.potassium} mmol/L`
     );

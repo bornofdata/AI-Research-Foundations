@@ -66,3 +66,15 @@ export interface NotificationItem {
 }
 
 export type TabType = 'home' | 'visits' | 'inbox' | 'health' | 'more';
+
+export interface Medication {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  prescribingDoctor: string;
+  startedAt: string;
+  endedAt?: string;
+  notes?: string;
+  active: boolean;
+}

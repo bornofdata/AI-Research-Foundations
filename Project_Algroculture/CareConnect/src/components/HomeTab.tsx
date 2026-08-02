@@ -11,16 +11,20 @@ import {
   Heart,
   FileText,
 } from 'lucide-react';
-import { PATIENT_INFO, APPOINTMENTS, LAB_REPORTS } from '../data/mockData';
-import { TabType } from '../types';
+import { TabType, Appointment, LabReport } from '../types';
+
+interface PatientProfile { name: string; }
 
 interface HomeTabProps {
+  patient: PatientProfile;
+  appointments: Appointment[];
+  labReports: LabReport[];
   onNavigateToTab: (tab: TabType) => void;
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ onNavigateToTab }) => {
-  const nextAppointment = APPOINTMENTS.find((a) => a.status === 'upcoming');
-  const latestReport = LAB_REPORTS[0];
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab }) => {
+  const nextAppointment = appointments.find((a) => a.status === 'upcoming');
+  const latestReport = labReports[0];
 
   return (
     <main className="pt-20 pb-32 px-5 max-w-2xl mx-auto space-y-6 animate-fadeIn">
@@ -30,7 +34,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ onNavigateToTab }) => {
           <span className="text-xs font-semibold uppercase tracking-wider text-on-primary-container">
             Patient Portal
           </span>
-          <h1 className="text-2xl font-bold">Good day, {PATIENT_INFO.name.split(' ')[0]} 👋</h1>
+          <h1 className="text-2xl font-bold">Good day, {patient.name.split(' ')[0]} 👋</h1>
           <p className="text-xs text-on-primary-container leading-relaxed max-w-sm">
             All recent metabolic and diagnostic panel records are updated. Your health metrics are on track.
           </p>

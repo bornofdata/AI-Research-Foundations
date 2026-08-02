@@ -11,24 +11,25 @@ import {
   CheckCircle,
   ExternalLink,
 } from 'lucide-react';
-import { LAB_REPORTS } from '../data/mockData';
 import { LabReport } from '../types';
 
 interface HealthTabProps {
+  labReports: LabReport[];
   onOpenPdf: (report: LabReport) => void;
   onOpenTrends: (report: LabReport) => void;
   onOpenAskFollowUp: (report: LabReport) => void;
 }
 
 export const HealthTab: React.FC<HealthTabProps> = ({
+  labReports,
   onOpenPdf,
   onOpenTrends,
   onOpenAskFollowUp,
 }) => {
-  const [selectedReportId, setSelectedReportId] = useState<string>('report-2'); // default to Metabolic Panel
+  const [selectedReportId, setSelectedReportId] = useState<string>(labReports[0]?.id ?? '');
   const [copiedToast, setCopiedToast] = useState(false);
 
-  const activeReport = LAB_REPORTS.find((r) => r.id === selectedReportId) || LAB_REPORTS[0];
+  const activeReport = labReports.find((r) => r.id === selectedReportId) || labReports[0];
 
   const handleShare = () => {
     navigator.clipboard?.writeText?.(window.location.href);
@@ -51,7 +52,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
           Recent Reports
         </h2>
         <div className="flex gap-3 overflow-x-auto scroll-hide pb-2">
-          {LAB_REPORTS.map((report) => {
+          {labReports.map((report) => {
             const isSelected = report.id === selectedReportId;
             return (
               <div

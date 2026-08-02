@@ -9,11 +9,15 @@ import {
   UserCheck,
   Building,
 } from 'lucide-react';
-import { APPOINTMENTS, DR_EMILY_CHEN } from '../data/mockData';
+import { DR_EMILY_CHEN } from '../data/mockData';
 import { Appointment } from '../types';
 
-export const VisitsTab: React.FC = () => {
-  const [appointmentsList, setAppointmentsList] = useState<Appointment[]>(APPOINTMENTS);
+interface VisitsTabProps {
+  appointments: Appointment[];
+}
+
+export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments }) => {
+  const [appointmentsList, setAppointmentsList] = useState<Appointment[]>(appointments);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(DR_EMILY_CHEN.name);
   const [selectedDate, setSelectedDate] = useState('2023-12-10');
