@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { BarChart2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { LabReport, Medication } from '../types';
 
@@ -412,7 +413,17 @@ export const WeeklyReport: React.FC<WeeklyReportProps> = ({
                         <span
                           className={`mt-[7px] w-1.5 h-1.5 rounded-full shrink-0 ${activeTabMeta.dot}`}
                         />
-                        <span>{bullet}</span>
+                        <span className="flex-1 min-w-0">
+                          <ReactMarkdown
+                            components={{
+                              p: ({ children }) => <span>{children}</span>,
+                              strong: ({ children }) => <strong className="font-semibold text-on-surface">{children}</strong>,
+                              em: ({ children }) => <em className="italic">{children}</em>,
+                            }}
+                          >
+                            {bullet}
+                          </ReactMarkdown>
+                        </span>
                       </li>
                     ))}
                     {isStreaming && (
@@ -426,14 +437,29 @@ export const WeeklyReport: React.FC<WeeklyReportProps> = ({
 
                 {/* Prose text (overview / priority tabs) */}
                 {bullets.length === 0 && proseText && (
-                  <p className={`text-sm leading-relaxed ${activeTabMeta.text}`}>
-                    {proseText}
+                  <div className={`text-sm leading-relaxed ${activeTabMeta.text}`}>
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="text-sm text-on-surface leading-relaxed mb-2 last:mb-0">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold text-on-surface">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        ul: ({ children }) => <ul className="space-y-1 my-1">{children}</ul>,
+                        li: ({ children }) => (
+                          <li className="flex gap-2 text-sm text-on-surface leading-relaxed">
+                            <span className={`mt-[7px] w-1.5 h-1.5 rounded-full shrink-0 ${activeTabMeta.dot}`} />
+                            <span>{children}</span>
+                          </li>
+                        ),
+                      }}
+                    >
+                      {proseText}
+                    </ReactMarkdown>
                     {isStreaming && (
                       <span className="inline-flex items-center gap-1 ml-2 text-on-surface-variant text-xs">
                         <span className="w-2 h-2 bg-primary rounded-full animate-pulse inline-block" />
                       </span>
                     )}
-                  </p>
+                  </div>
                 )}
 
                 {/* Section exists but body still arriving */}
