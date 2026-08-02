@@ -38,6 +38,13 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 
 ## Features
 
+### Weekly Health Insights Report (Home tab)
+- AI-generated weekly summary aggregating vitals logged, symptoms recorded, medication adherence, and lab data into a structured report card
+- Tabbed sections: Overview (Week in Review) | Wins (What Went Well) | Watch (Areas to Watch) | Priority (This Week's Priority + Looking Ahead)
+- Collapsed by default — expands on tap; collapsed header shows the current week date range (e.g., "Jul 28 – Aug 3")
+- Cached for the full week in `localStorage` (`careconnect_weekly_report`) keyed by ISO date of Monday — regenerates automatically each new week; manual refresh available
+- Reads locally stored data: vitals from `careconnect_vitals`, symptom logs from `careconnect_symptom_log`, and per-day adherence from `careconnect_meds_YYYY-MM-DD` keys
+
 ### Immunization & Vaccine Tracker (More tab)
 - Log vaccination history with vaccine name, date received, and optional next due date
 - Status badges auto-calculated: "Up to Date" (green) when no due date or due date is future; "Overdue" (red) when due date is past
@@ -258,6 +265,7 @@ Frontend (React 19 + Vite + Tailwind CSS 4)
 │   ├── AIChatModal.tsx            Streaming chat UI (SSE reader, markdown)
 │   ├── AIHealthBrief.tsx          Daily AI health brief with session cache
 │   ├── LifestyleTips.tsx          Tabbed nutrition & lifestyle recommendations (localStorage cache)
+│   ├── WeeklyReport.tsx           Collapsible weekly AI health report — tabbed, cached per week
 │   ├── HomeTab.tsx                Dashboard with health score + AI brief
 │   ├── HealthTab.tsx              Lab results list
 │   ├── VisitsTab.tsx              Appointments
@@ -286,7 +294,8 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/lifestyle-tips       Streaming personalized nutrition & lifestyle recommendations (SSE)
 ├── POST /api/suggest-goals        AI-generated health goals (JSON)
 ├── POST /api/symptom-check        Streaming clinical triage assessment from symptom description (SSE)
-└── POST /api/vaccine-recommendations  AI-personalized vaccine recommendations (JSON)
+├── POST /api/vaccine-recommendations  AI-personalized vaccine recommendations (JSON)
+└── POST /api/weekly-report        Streaming weekly health insights report (SSE)
 ├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn
 └── DELETE /api/chat-history       Clear chat history

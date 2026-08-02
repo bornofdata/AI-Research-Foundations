@@ -760,6 +760,71 @@ ${patientContext}` }],
   }
 });
 
+// ── POST /api/weekly-report ───────────────────────────────────
+// Stream a structured weekly health report for the patient.
+app.post('/api/weekly-report', async (req, res) => {
+  const { patientContext, weekSummary } = req.body as {
+    patientContext: string;
+    weekSummary: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: 'GEMINI_API_KEY is not configured.' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are a clinical health coach generating a personalized weekly health report for a patient.
+Based on the patient's health data and this week's activity summary, generate a structured weekly report.
+
+Use these exact markdown headings:
+
+## Week in Review
+## What Went Well
+## Areas to Watch
+## This Week's Priority
+## Looking Ahead
+
+Under "Week in Review": 2-3 sentences summarizing the week's health activity.
+Under "What Went Well": 2-3 bullet points of positive observations.
+Under "Areas to Watch": 2-3 bullet points of things needing attention, referencing specific values.
+Under "This Week's Priority": One clear, actionable priority for the coming week.
+Under "Looking Ahead": 1-2 sentences about the next appointment or health milestone.
+
+Be specific to the patient's actual data. Be encouraging but honest.
+
+Generate a weekly health report. Patient context: ${patientContext}
+
+This week's activity: ${weekSummary}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) {
+        res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+      }
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unknown error occurred.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── POST /api/vaccine-recommendations ────────────────────────
 // Generate AI-personalized vaccine recommendations based on patient context.
 app.post('/api/vaccine-recommendations', async (req, res) => {

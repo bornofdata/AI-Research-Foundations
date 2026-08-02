@@ -160,6 +160,7 @@ function AppShell() {
           patient={patient}
           appointments={appointments}
           labReports={labReports}
+          medications={medications}
           onNavigateToTab={setActiveTab}
           patientContext={patientContext}
           onOpenSymptomLog={() => setSymptomLogOpen(true)}

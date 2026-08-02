@@ -10,11 +10,12 @@ import {
   History,
   Search,
 } from 'lucide-react';
-import { TabType, Appointment, LabReport } from '../types';
+import { TabType, Appointment, LabReport, Medication } from '../types';
 import { AIHealthBrief } from './AIHealthBrief';
 import { HealthGoals } from './HealthGoals';
 import { MyVitals } from './MyVitals';
 import { LifestyleTips } from './LifestyleTips';
+import { WeeklyReport } from './WeeklyReport';
 
 interface PatientProfile { name: string; }
 
@@ -22,6 +23,7 @@ interface HomeTabProps {
   patient: PatientProfile;
   appointments: Appointment[];
   labReports: LabReport[];
+  medications: Medication[];
   onNavigateToTab: (tab: TabType) => void;
   patientContext: string;
   onOpenSymptomLog: () => void;
@@ -43,7 +45,7 @@ function computeHealthScore(labReports: LabReport[]) {
   return { score, label, color, ring };
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline, onOpenVitalsLog, vitalsRefreshKey, onOpenSymptomChecker }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, medications, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline, onOpenVitalsLog, vitalsRefreshKey, onOpenSymptomChecker }) => {
   const nextAppointment = appointments.find((a) => a.status === 'upcoming');
   const healthScore = computeHealthScore(labReports);
 
@@ -220,6 +222,13 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
 
       {/* AI Health Brief */}
       <AIHealthBrief patientContext={patientContext} />
+
+      {/* Weekly Health Insights Report */}
+      <WeeklyReport
+        patientContext={patientContext}
+        labReports={labReports}
+        medications={medications}
+      />
 
       {/* Health Goals */}
       <HealthGoals patientContext={patientContext} />
