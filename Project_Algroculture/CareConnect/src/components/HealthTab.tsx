@@ -22,6 +22,7 @@ interface HealthTabProps {
   onOpenScan: () => void;
   onOpenCompare: () => void;
   onOpenSecondOpinion: (report: LabReport) => void;
+  onShareReport?: (report: LabReport) => void;
 }
 
 export const HealthTab: React.FC<HealthTabProps> = ({
@@ -32,6 +33,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
   onOpenScan,
   onOpenCompare,
   onOpenSecondOpinion,
+  onShareReport,
 }) => {
   const [selectedReportId, setSelectedReportId] = useState<string>(labReports[0]?.id ?? '');
   const [copiedToast, setCopiedToast] = useState(false);
@@ -272,6 +274,14 @@ export const HealthTab: React.FC<HealthTabProps> = ({
         >
           <Microscope className="w-4 h-4" /> AI Second Opinion
         </button>
+        {onShareReport && (
+          <button
+            onClick={() => onShareReport(activeReport)}
+            className="flex items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-bold rounded-full border border-outline-variant text-on-surface-variant hover:border-primary/40 hover:text-primary transition-colors h-[52px]"
+          >
+            <Share2 className="w-4 h-4" /> Share Report
+          </button>
+        )}
       </div>
     </main>
   );

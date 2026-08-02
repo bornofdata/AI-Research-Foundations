@@ -31,6 +31,7 @@ interface HomeTabProps {
   onOpenVitalsLog: () => void;
   vitalsRefreshKey: number;
   onOpenSymptomChecker: () => void;
+  onOpenVitalsImport?: () => void;
 }
 
 function computeHealthScore(labReports: LabReport[]) {
@@ -45,7 +46,7 @@ function computeHealthScore(labReports: LabReport[]) {
   return { score, label, color, ring };
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, medications, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline, onOpenVitalsLog, vitalsRefreshKey, onOpenSymptomChecker }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, medications, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline, onOpenVitalsLog, vitalsRefreshKey, onOpenSymptomChecker, onOpenVitalsImport }) => {
   const nextAppointment = appointments.find((a) => a.status === 'upcoming');
   const healthScore = computeHealthScore(labReports);
 
@@ -179,7 +180,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
       </section>
 
       {/* My Vitals — patient self-reported readings */}
-      <MyVitals onOpenLog={onOpenVitalsLog} refreshKey={vitalsRefreshKey} />
+      <MyVitals onOpenLog={onOpenVitalsLog} refreshKey={vitalsRefreshKey} onOpenImport={onOpenVitalsImport} />
 
       {/* Vitals Summary + Health Score */}
       <section className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant space-y-3">

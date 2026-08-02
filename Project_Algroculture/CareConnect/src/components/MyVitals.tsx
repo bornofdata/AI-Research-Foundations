@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { Activity, Plus } from 'lucide-react';
+import { Activity, Plus, Download } from 'lucide-react';
 import { LineChart, Line } from 'recharts';
 
 interface MyVitalsProps {
   onOpenLog: () => void;
   refreshKey: number;
+  onOpenImport?: () => void;
 }
 
 interface VitalReading {
@@ -109,7 +110,7 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-export const MyVitals: React.FC<MyVitalsProps> = ({ onOpenLog, refreshKey }) => {
+export const MyVitals: React.FC<MyVitalsProps> = ({ onOpenLog, refreshKey, onOpenImport }) => {
   // Read from localStorage whenever refreshKey changes
   const readings = useMemo<VitalReading[]>(() => {
     try {
@@ -133,12 +134,22 @@ export const MyVitals: React.FC<MyVitalsProps> = ({ onOpenLog, refreshKey }) => 
               Track blood pressure, heart rate, glucose and more between appointments.
             </p>
           </div>
-          <button
-            onClick={onOpenLog}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary rounded-full text-xs font-bold hover:bg-primary/90 active:scale-95 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" /> Log Reading
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenLog}
+              className="flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary rounded-full text-xs font-bold hover:bg-primary/90 active:scale-95 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" /> Log Reading
+            </button>
+            {onOpenImport && (
+              <button
+                onClick={onOpenImport}
+                className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant rounded-full text-xs font-semibold text-on-surface-variant hover:border-primary/60 hover:text-primary transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> Import
+              </button>
+            )}
+          </div>
         </div>
       </section>
     );
@@ -166,12 +177,22 @@ export const MyVitals: React.FC<MyVitalsProps> = ({ onOpenLog, refreshKey }) => 
         <h2 className="font-bold text-base text-on-surface flex items-center gap-1.5">
           <Activity className="w-4 h-4 text-secondary" /> My Vitals
         </h2>
-        <button
-          onClick={onOpenLog}
-          className="flex items-center gap-1 px-3 py-1.5 border border-outline-variant rounded-full text-xs font-semibold text-on-surface-variant hover:border-primary/60 hover:text-primary transition-colors"
-        >
-          <Plus className="w-3 h-3" /> Log Reading
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenImport && (
+            <button
+              onClick={onOpenImport}
+              className="flex items-center gap-1 px-3 py-1.5 border border-outline-variant rounded-full text-xs font-semibold text-on-surface-variant hover:border-primary/60 hover:text-primary transition-colors"
+            >
+              <Download className="w-3 h-3" /> Import
+            </button>
+          )}
+          <button
+            onClick={onOpenLog}
+            className="flex items-center gap-1 px-3 py-1.5 border border-outline-variant rounded-full text-xs font-semibold text-on-surface-variant hover:border-primary/60 hover:text-primary transition-colors"
+          >
+            <Plus className="w-3 h-3" /> Log Reading
+          </button>
+        </div>
       </div>
 
       <p className="text-[11px] text-on-surface-variant -mt-1">

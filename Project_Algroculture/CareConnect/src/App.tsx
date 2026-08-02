@@ -23,6 +23,8 @@ import { SymptomCheckerModal } from './components/SymptomCheckerModal';
 import { VitalsLogModal } from './components/VitalsLogModal';
 import { TimelineModal } from './components/TimelineModal';
 import { LabCompareModal } from './components/LabCompareModal';
+import { WearableImportModal } from './components/WearableImportModal';
+import { LabShareModal } from './components/LabShareModal';
 import { SignInPage } from './components/SignInPage';
 import { usePatientData } from './hooks/usePatientData';
 import { useTheme } from './hooks/useTheme';
@@ -58,6 +60,8 @@ function AppShell() {
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
   const [apptRequestOpen, setApptRequestOpen] = useState(false);
   const [secondOpinionReport, setSecondOpinionReport] = useState<LabReport | null>(null);
+  const [wearableImportOpen, setWearableImportOpen] = useState(false);
+  const [shareReport, setShareReport] = useState<LabReport | null>(null);
 
   // Build patient context once; passed to AI-powered components
   const patientContext = useMemo(
@@ -156,6 +160,7 @@ function AppShell() {
           onOpenScan={() => setScanOpen(true)}
           onOpenCompare={() => setCompareOpen(true)}
           onOpenSecondOpinion={(report) => setSecondOpinionReport(report)}
+          onShareReport={(report) => setShareReport(report)}
         />
       )}
       {activeTab === 'home' && (
@@ -171,6 +176,7 @@ function AppShell() {
           onOpenVitalsLog={() => setVitalsLogOpen(true)}
           vitalsRefreshKey={vitalsRefreshKey}
           onOpenSymptomChecker={() => setSymptomCheckerOpen(true)}
+          onOpenVitalsImport={() => setWearableImportOpen(true)}
         />
       )}
       {activeTab === 'visits' && (
@@ -284,6 +290,18 @@ function AppShell() {
         onClose={() => setSecondOpinionReport(null)}
         report={secondOpinionReport}
         patientContext={patientContext}
+      />
+
+      <WearableImportModal
+        isOpen={wearableImportOpen}
+        onClose={() => setWearableImportOpen(false)}
+        onImported={() => { setVitalsRefreshKey((k) => k + 1); setWearableImportOpen(false); }}
+      />
+
+      <LabShareModal
+        isOpen={!!shareReport}
+        onClose={() => setShareReport(null)}
+        report={shareReport}
       />
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />

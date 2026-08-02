@@ -452,8 +452,8 @@ Features planned for future builds. Checked off as each is built and tested.
 - [x] **Medical ID / QR Code** — generate a scannable emergency QR code from the emergency card data
 
 ### Connectivity
-- [ ] **Wearable Data Import** — paste or upload Apple Health / Google Fit exports; auto-populate vitals
-- [ ] **Lab Result Sharing** — generate a shareable link or PDF of a specific report to send to another provider
+- [x] **Wearable Data Import** — paste or upload Apple Health / Google Fit exports; auto-populate vitals
+- [x] **Lab Result Sharing** — generate a shareable link or PDF of a specific report to send to another provider
 - [ ] **Pharmacy Locator** — find nearby in-network pharmacies, save preferred pharmacy
 
 ### Content
