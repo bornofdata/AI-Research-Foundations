@@ -23,7 +23,7 @@ import { SignInPage } from './components/SignInPage';
 import { usePatientData } from './hooks/usePatientData';
 import { useTheme } from './hooks/useTheme';
 import { useMedicationReminders } from './hooks/useMedicationReminders';
-import { TabType, LabReport, Appointment, NotificationItem } from './types';
+import { TabType, LabReport, Appointment, NotificationItem, Message } from './types';
 
 const clerkEnabled = !!(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
@@ -48,12 +48,27 @@ function AppShell() {
   const [prepAppointment, setPrepAppointment] = useState<Appointment | null>(null);
   const [symptomLogOpen, setSymptomLogOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
 
   // Build patient context once; passed to AI-powered components
   const patientContext = useMemo(
     () => buildPatientContext(undefined, medications, historicalTrends),
     [medications, historicalTrends],
   );
+
+  const handleRefillSent = (aiDraftedMessage: string, medicationName: string) => {
+    const newMsg: Message = {
+      id: `refill-${Date.now()}`,
+      senderName: patient.name,
+      senderRole: 'Patient',
+      senderAvatar: '',
+      text: `Prescription Refill Request — ${medicationName}\n\n${aiDraftedMessage}`,
+      timestamp: 'Just now',
+      isDoctor: false,
+    };
+    setPendingMessages((prev) => [...prev, newMsg]);
+    setActiveTab('inbox');
+  };
 
   // Load AI-generated smart alerts once after data is ready
   const alertsFetched = useRef(false);
@@ -136,8 +151,8 @@ function AppShell() {
           onPrepVisit={(apt) => setPrepAppointment(apt)}
         />
       )}
-      {activeTab === 'inbox' && <InboxTab messages={messages} patientContext={patientContext} />}
-      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} isDark={isDark} toggleTheme={toggleTheme} labReports={labReports} appointments={appointments} patientContext={patientContext} />}
+      {activeTab === 'inbox' && <InboxTab messages={[...messages, ...pendingMessages]} patientContext={patientContext} />}
+      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} isDark={isDark} toggleTheme={toggleTheme} labReports={labReports} appointments={appointments} patientContext={patientContext} onRefillSent={handleRefillSent} />}
 
       {/* Global AI FAB */}
       {!aiChatOpen && (

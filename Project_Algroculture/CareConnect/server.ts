@@ -473,6 +473,45 @@ Explain ${medicationName} ${dosage} for this patient: ${patientContext}` }],
   }
 });
 
+// ── POST /api/refill-request ──────────────────────────────────
+// AI-draft a professional prescription refill request message.
+app.post('/api/refill-request', async (req, res) => {
+  const { medicationName, dosage, frequency, patientContext, pharmacyNote } = req.body as {
+    medicationName: string;
+    dosage: string;
+    frequency: string;
+    patientContext: string;
+    pharmacyNote?: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `You are a patient portal assistant drafting a prescription refill request to a physician.
+Write a professional, concise refill request message (3-5 sentences) from the patient's perspective.
+Include the medication name, dosage, and frequency. Mention any relevant health context (e.g., upcoming travel, running low). Keep a polite, clinical tone. Do not include a subject line or greeting — just the body text.
+
+Draft a refill request for ${medicationName} ${dosage} ${frequency}. Optional patient note: ${pharmacyNote || 'none'}. Patient health context: ${patientContext}`,
+        }],
+      }],
+    });
+
+    const message = response.text ?? 'Unable to draft refill request.';
+    res.json({ message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.status(500).json({ error: message });
+  }
+});
+
 // ── POST /api/suggest-goals ───────────────────────────────────
 // Generate 3 personalized health goals from the patient's record.
 app.post('/api/suggest-goals', async (req, res) => {

@@ -28,6 +28,7 @@ import { MedicationReminders } from './MedicationReminders';
 import { useMedicationReminders } from '../hooks/useMedicationReminders';
 import { HealthExportModal } from './HealthExportModal';
 import { MedInfoModal } from './MedInfoModal';
+import { RefillRequestModal } from './RefillRequestModal';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -253,9 +254,10 @@ interface MoreTabProps {
   labReports: LabReport[];
   appointments: Appointment[];
   patientContext: string;
+  onRefillSent: (content: string, medName: string) => void;
 }
 
-export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, toggleTheme, labReports, appointments, patientContext }) => {
+export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, toggleTheme, labReports, appointments, patientContext, onRefillSent }) => {
   const { signOut } = useClerk();
   const activeMeds = medications.filter((m) => m.active);
   const [takenMeds, setTakenMeds] = useState<Record<string, boolean>>(loadAdherence);
@@ -263,6 +265,7 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
   const { dueAlerts, clearAlert, addAlert } = useMedicationReminders();
   const [exportOpen, setExportOpen] = useState(false);
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
+  const [refillMed, setRefillMed] = useState<Medication | null>(null);
 
   const toggleMed = (id: string) => {
     setTakenMeds((prev) => {
@@ -399,6 +402,16 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
                     }`}>
                       {taken ? 'Taken' : 'Pending'}
                     </span>
+                  </button>
+
+                  {/* Refill button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setRefillMed(med); }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-fixed text-primary hover:bg-primary/10 transition-colors shrink-0"
+                    aria-label={`Request refill for ${med.name}`}
+                    title={`Request refill for ${med.name}`}
+                  >
+                    Refill
                   </button>
 
                   {/* Info button — opens MedInfoModal */}
@@ -546,6 +559,18 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
         onClose={() => setSelectedMed(null)}
         medication={selectedMed}
         patientContext={patientContext}
+      />
+
+      {/* Prescription Refill Request Modal */}
+      <RefillRequestModal
+        isOpen={!!refillMed}
+        onClose={() => setRefillMed(null)}
+        medication={refillMed}
+        patientContext={patientContext}
+        onRequestSent={(message, medName) => {
+          setRefillMed(null);
+          onRefillSent(message, medName);
+        }}
       />
     </main>
   );
