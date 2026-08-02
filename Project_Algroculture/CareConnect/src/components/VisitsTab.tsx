@@ -113,10 +113,16 @@ export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onPrepVisit,
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-on-surface-variant bg-surface-container p-2.5 rounded-xl">
-                <MapPin className="w-4 h-4 text-outline shrink-0" />
-                <span className="truncate">{apt.location}</span>
-              </div>
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(apt.location)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-primary bg-surface-container p-2.5 rounded-xl hover:bg-primary-fixed/40 active:scale-[0.99] transition-all"
+                aria-label={`Open ${apt.location} in maps`}
+              >
+                <MapPin className="w-4 h-4 shrink-0" />
+                <span className="truncate underline underline-offset-2">{apt.location}</span>
+              </a>
 
               <button
                 onClick={() => onPrepVisit(apt)}
