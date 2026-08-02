@@ -54,6 +54,26 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Cached for the full week in `localStorage` (`careconnect_weekly_report`) keyed by ISO date of Monday — regenerates automatically each new week; manual refresh available
 - Reads locally stored data: vitals from `careconnect_vitals`, symptom logs from `careconnect_symptom_log`, and per-day adherence from `careconnect_meds_YYYY-MM-DD` keys
 
+### Insurance & Copay Estimator (More tab)
+- Deductible and out-of-pocket progress bars showing how much of your annual limits have been met
+- Select a visit type (Primary Care, Specialist, Urgent Care, ER, Lab Work, Generic/Brand Prescriptions) to instantly see your estimated copay
+- Deductible-aware: shows the estimated full cost when your deductible has not yet been met
+- Edit your plan details (plan name, type, deductibles, all copay tiers) inline; saved to localStorage
+
+### Medical ID & QR Code (More tab)
+- Generates a scannable QR code containing your full emergency medical info
+- Shows blood type (large, bold, prominent), allergies, chronic conditions, and emergency contact on a styled card
+- Download the QR code as a PNG or copy the text summary to the clipboard
+- Accessible from the Medical ID & QR Code button in the More tab settings menu
+
+### Medical Documents Vault (More tab)
+- Upload insurance cards, imaging reports, referral letters, lab reports, discharge summaries, and other documents
+- Documents stored as base64 in `localStorage` (`careconnect_documents`) — no server upload required
+- View any document in a new browser tab; delete with confirmation prompt
+- File type icons and color-coded badges per document category (blue / purple / emerald / amber / orange / neutral)
+- Optional notes per document; file size shown; max 10 MB per file with a warning above 5 MB
+- Document count shown in section header; localStorage quota errors surfaced with a clear message
+
 ### Immunization & Vaccine Tracker (More tab)
 - Log vaccination history with vaccine name, date received, and optional next due date
 - Status badges auto-calculated: "Up to Date" (green) when no due date or due date is future; "Overdue" (red) when due date is past
@@ -407,3 +427,34 @@ The Express/Node.js backend is suitable for MVP. At scale, the AI layer benefits
 - Vector search, fine-tuning, and embedding pipelines are easier in Python
 
 The migration is smooth — `buildPatientContext.ts` is the only file that touches patient data. Replace it with a Python API call and nothing else changes.
+
+---
+
+## Feature TODO List
+
+Features planned for future builds. Checked off as each is built and tested.
+
+### Patient Engagement
+- [ ] **Pain & Mood Tracker** — daily 1–10 pain scale + mood log, trends over time, correlations with medications
+- [ ] **Sleep Logger** — log sleep hours/quality nightly, mini trend chart, tied into the lifestyle coach
+- [ ] **Meal / Food Logger** — log meals and get AI nutritional feedback tied to lab values (glucose, cholesterol)
+- [ ] **Health Challenges** — gamified daily goals (hydration, steps, medication streaks) with progress badges
+
+### Clinical Tools
+- [ ] **AI Care Plan** — Gemini generates a personalized long-term care roadmap based on all conditions and lab trends
+- [ ] **Allergy Reaction Log** — log allergic reactions with severity, trigger, and treatment; exportable for doctors
+- [ ] **Referral Tracker** — track specialist referrals (status: pending / scheduled / completed)
+- [ ] **Family Health History** — record family medical history; AI assesses inherited risk factors
+
+### Documents & Admin
+- [x] **Medical Documents Vault** — upload and view insurance cards, imaging reports, referral letters
+- [x] **Insurance & Copay Estimator** — estimate visit costs based on insurance plan and visit type
+- [x] **Medical ID / QR Code** — generate a scannable emergency QR code from the emergency card data
+
+### Connectivity
+- [ ] **Wearable Data Import** — paste or upload Apple Health / Google Fit exports; auto-populate vitals
+- [ ] **Lab Result Sharing** — generate a shareable link or PDF of a specific report to send to another provider
+- [ ] **Pharmacy Locator** — find nearby in-network pharmacies, save preferred pharmacy
+
+### Content
+- [ ] **Health Education Library** — AI explains conditions, medications, and lab terms on demand; searchable

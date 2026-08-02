@@ -21,6 +21,7 @@ import {
   Download,
   Info,
   ShieldCheck,
+  QrCode,
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { Medication, LabReport, Appointment } from '../types';
@@ -32,6 +33,9 @@ import { MedInfoModal } from './MedInfoModal';
 import { RefillRequestModal } from './RefillRequestModal';
 import { DrugInteractionModal } from './DrugInteractionModal';
 import { VaccineTracker } from './VaccineTracker';
+import { DocumentsVault } from './DocumentsVault';
+import { CopayEstimator } from './CopayEstimator';
+import { MedicalIDModal } from './MedicalIDModal';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -270,6 +274,7 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
   const [refillMed, setRefillMed] = useState<Medication | null>(null);
   const [interactionOpen, setInteractionOpen] = useState(false);
+  const [medIdOpen, setMedIdOpen] = useState(false);
 
   const toggleMed = (id: string) => {
     setTakenMeds((prev) => {
@@ -453,6 +458,12 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
       {/* Immunization & Vaccine Tracker */}
       <VaccineTracker patientContext={patientContext} />
 
+      {/* Medical Documents Vault */}
+      <DocumentsVault />
+
+      {/* Insurance & Copay Estimator */}
+      <CopayEstimator />
+
       {/* Symptom Journal */}
       {recentLogs.length > 0 && (
         <section className="space-y-3">
@@ -530,6 +541,20 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
           <ChevronRight className="w-4 h-4 text-outline" />
         </button>
 
+        {/* Medical ID & QR Code */}
+        <button
+          onClick={() => setMedIdOpen(true)}
+          className="w-full p-4 flex items-center justify-between text-on-surface hover:bg-surface-container transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-surface-container rounded-xl text-primary">
+              <QrCode className="w-4 h-4" />
+            </div>
+            <span className="font-semibold text-sm">Medical ID &amp; QR Code</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-outline" />
+        </button>
+
         {[
           { icon: User, label: 'Personal Information & Medical History' },
           { icon: PhoneCall, label: 'Emergency Contacts & Caregivers' },
@@ -595,6 +620,13 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
         onClose={() => setInteractionOpen(false)}
         medications={medications}
         patientContext={patientContext}
+      />
+
+      {/* Medical ID & QR Code Modal */}
+      <MedicalIDModal
+        isOpen={medIdOpen}
+        onClose={() => setMedIdOpen(false)}
+        patient={patient}
       />
     </main>
   );
