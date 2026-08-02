@@ -6,9 +6,11 @@ import {
   Stethoscope,
   Activity,
   FileText,
+  NotebookPen,
 } from 'lucide-react';
 import { TabType, Appointment, LabReport } from '../types';
 import { AIHealthBrief } from './AIHealthBrief';
+import { HealthGoals } from './HealthGoals';
 
 interface PatientProfile { name: string; }
 
@@ -18,6 +20,7 @@ interface HomeTabProps {
   labReports: LabReport[];
   onNavigateToTab: (tab: TabType) => void;
   patientContext: string;
+  onOpenSymptomLog: () => void;
 }
 
 function computeHealthScore(labReports: LabReport[]) {
@@ -32,7 +35,7 @@ function computeHealthScore(labReports: LabReport[]) {
   return { score, label, color, ring };
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog }) => {
   const nextAppointment = appointments.find((a) => a.status === 'upcoming');
   const healthScore = computeHealthScore(labReports);
 
@@ -123,6 +126,19 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
               <p className="text-xs text-on-surface-variant">Message Dr. Emily Chen</p>
             </div>
           </button>
+
+          <button
+            onClick={onOpenSymptomLog}
+            className="col-span-2 p-4 bg-surface-container rounded-2xl border border-outline-variant/60 text-left hover:border-secondary/50 transition-all flex items-center gap-4 group"
+          >
+            <div className="w-10 h-10 bg-secondary-container text-on-secondary-container rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <NotebookPen className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-on-surface">Log Today's Symptoms</h3>
+              <p className="text-xs text-on-surface-variant">Track how you feel between appointments</p>
+            </div>
+          </button>
         </div>
       </section>
 
@@ -167,6 +183,9 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
 
       {/* AI Health Brief */}
       <AIHealthBrief patientContext={patientContext} />
+
+      {/* Health Goals */}
+      <HealthGoals patientContext={patientContext} />
     </main>
   );
 };

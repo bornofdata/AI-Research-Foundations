@@ -422,6 +422,41 @@ ${patientContext}` }],
   }
 });
 
+// ── POST /api/suggest-goals ───────────────────────────────────
+// Generate 3 personalized health goals from the patient's record.
+app.post('/api/suggest-goals', async (req, res) => {
+  const { patientContext } = req.body as { patientContext: string };
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.json({ goals: [] }); return; }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `Based on this patient's health record, suggest exactly 3 achievable, specific health goals for the next 3 months. Each goal must be directly tied to a value in their record.
+
+Return ONLY valid JSON — no markdown, no code fences:
+[{"goal":"...","reason":"...","metric":"..."}]
+
+- "goal": short action statement under 10 words (e.g. "Keep fasting glucose below 95 mg/dL")
+- "reason": one sentence explaining why, referencing their actual value
+- "metric": the lab test or measure it tracks (e.g. "Fasting Glucose")
+
+PATIENT RECORD:
+${patientContext}` }],
+      }],
+    });
+
+    const raw = response.text ?? '[]';
+    const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    res.json({ goals: JSON.parse(cleaned) });
+  } catch {
+    res.json({ goals: [] });
+  }
+});
+
 // ── GET /api/chat-history ─────────────────────────────────────
 // Load persisted chat history for the authenticated patient.
 app.get('/api/chat-history', async (req, res) => {

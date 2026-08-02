@@ -16,6 +16,7 @@ import { AIChatModal } from './components/AIChatModal';
 import { NotificationsModal } from './components/NotificationsModal';
 import { ScanReportModal } from './components/ScanReportModal';
 import { VisitPrepModal } from './components/VisitPrepModal';
+import { SymptomLogModal } from './components/SymptomLogModal';
 import { SignInPage } from './components/SignInPage';
 import { usePatientData } from './hooks/usePatientData';
 import { TabType, LabReport, Appointment, NotificationItem } from './types';
@@ -36,6 +37,7 @@ function AppShell() {
   const [aiChatReport, setAiChatReport] = useState<LabReport | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [prepAppointment, setPrepAppointment] = useState<Appointment | null>(null);
+  const [symptomLogOpen, setSymptomLogOpen] = useState(false);
 
   // Build patient context once; passed to AI-powered components
   const patientContext = useMemo(
@@ -113,6 +115,7 @@ function AppShell() {
           labReports={labReports}
           onNavigateToTab={setActiveTab}
           patientContext={patientContext}
+          onOpenSymptomLog={() => setSymptomLogOpen(true)}
         />
       )}
       {activeTab === 'visits' && (
@@ -177,6 +180,7 @@ function AppShell() {
       />
 
       <ScanReportModal isOpen={scanOpen} onClose={() => setScanOpen(false)} />
+      <SymptomLogModal isOpen={symptomLogOpen} onClose={() => setSymptomLogOpen(false)} />
 
       {prepAppointment && (
         <VisitPrepModal

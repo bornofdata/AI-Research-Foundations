@@ -102,6 +102,21 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Refresh button to regenerate if health data has changed
 - Copy-to-clipboard button for sharing the summary before the appointment
 
+### AI Health Goals (Home tab)
+- AI generates 3 personalized, measurable goals tied to the patient's actual lab values (e.g. "Keep fasting glucose below 95 mg/dL")
+- Each goal shows the metric it tracks and the reason it was suggested
+- Tap any goal to mark it on track — progress shown as "X/Y on track" badge
+- Goals persist in `localStorage`; refresh button regenerates new AI suggestions
+- Sparkle icon marks AI-suggested goals vs. any future user-added ones
+
+### Symptom Journal (Home tab → More tab)
+- "Log Today's Symptoms" quick-action tile on the Home tab opens a daily log modal
+- Select from 10 symptom chips (Fatigue, Headache, Dizziness, etc.) + optional free-text note
+- Severity slider 1–5 with colour-coded labels (Mild → Severe)
+- Entries saved to `localStorage` with timestamp
+- 3 most recent entries shown in the More tab for quick reference
+- Journal entries can be referenced during pre-visit prep summaries
+
 ### Chat History Persistence
 - **With Supabase:** history saved server-side per patient, persists across devices and sessions
 - **Without Supabase:** history saved to `localStorage`, persists per device
@@ -142,7 +157,8 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/trend-insight        Streaming metric trend analysis (SSE)
 ├── POST /api/smart-alerts         AI-generated health alerts (JSON)
 ├── POST /api/scan-report          Gemini vision — extract lab values from image (JSON)
-└── POST /api/visit-prep           Streaming pre-visit AI prep summary (SSE)
+├── POST /api/visit-prep           Streaming pre-visit AI prep summary (SSE)
+└── POST /api/suggest-goals        AI-generated health goals (JSON)
 ├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn
 └── DELETE /api/chat-history       Clear chat history

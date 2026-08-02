@@ -10,9 +10,11 @@ import {
   Pill,
   CheckCircle2,
   Circle,
+  NotebookPen,
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { Medication } from '../types';
+import { loadSymptomLog } from './SymptomLogModal';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -44,6 +46,7 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
   const { signOut } = useClerk();
   const activeMeds = medications.filter((m) => m.active);
   const [takenMeds, setTakenMeds] = useState<Record<string, boolean>>(loadAdherence);
+  const recentLogs = loadSymptomLog().slice(0, 3);
 
   const toggleMed = (id: string) => {
     setTakenMeds((prev) => {
@@ -152,6 +155,42 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
             })}
           </div>
           <p className="text-[10px] text-on-surface-variant text-center">Tap a medication to mark it as taken · Resets daily</p>
+        </section>
+      )}
+
+      {/* Symptom Journal */}
+      {recentLogs.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-bold text-sm text-on-surface flex items-center gap-2">
+            <NotebookPen className="w-4 h-4 text-secondary" /> Recent Symptom Entries
+          </h2>
+          <div className="space-y-2">
+            {recentLogs.map((entry) => (
+              <div key={entry.id} className="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-wrap gap-1 flex-1 mr-3">
+                    {entry.symptoms.length > 0
+                      ? entry.symptoms.map((s) => (
+                          <span key={s} className="text-[10px] px-2 py-0.5 bg-primary-fixed text-primary rounded-full font-medium">{s}</span>
+                        ))
+                      : <span className="text-xs text-on-surface-variant italic">Note only</span>
+                    }
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                    entry.severity <= 2 ? 'bg-emerald-100 text-emerald-700' :
+                    entry.severity === 3 ? 'bg-amber-100 text-amber-700' :
+                    'bg-error-container/50 text-error'
+                  }`}>
+                    Severity {entry.severity}/5
+                  </span>
+                </div>
+                {entry.note && <p className="text-xs text-on-surface-variant mt-2 leading-snug">{entry.note}</p>}
+                <p className="text-[10px] text-outline mt-2">
+                  {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
