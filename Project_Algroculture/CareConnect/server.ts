@@ -608,6 +608,61 @@ Draft an appointment request for a ${visitType} visit. Preferred date: ${preferr
   }
 });
 
+// ── POST /api/lifestyle-tips ─────────────────────────────────
+// Stream personalized nutrition & lifestyle recommendations for the home screen.
+app.post('/api/lifestyle-tips', async (req, res) => {
+  const { patientContext } = req.body as { patientContext: string };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: 'GEMINI_API_KEY is not configured.' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are a clinical nutritionist and lifestyle medicine specialist reviewing a patient's health data.
+Generate specific, actionable recommendations organized under these exact markdown headings:
+
+## 🥗 Diet
+## 🏃 Exercise
+## 😴 Sleep
+## 💊 Supplements
+
+Under each heading, provide exactly 2-3 bullet points (use - for bullets).
+Each bullet must be specific to the patient's actual lab values and medications — not generic advice.
+Reference actual numbers (e.g., "Your fasting glucose of 94 mg/dL is borderline — limit refined carbohydrates to under 150g/day").
+Keep each bullet to 1-2 sentences. Be practical and specific.
+Do not add any text before the first heading or after the last bullet.
+
+Generate personalized nutrition and lifestyle recommendations for this patient: ${patientContext}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) {
+        res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+      }
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unknown error occurred.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── POST /api/suggest-goals ───────────────────────────────────
 // Generate 3 personalized health goals from the patient's record.
 app.post('/api/suggest-goals', async (req, res) => {

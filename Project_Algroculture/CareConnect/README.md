@@ -185,6 +185,13 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Refresh button to regenerate if health data has changed
 - Copy-to-clipboard button for sharing the summary before the appointment
 
+### Nutrition & Lifestyle Coach (Home tab)
+- AI generates specific dietary, exercise, sleep, and supplement recommendations tied to the patient's actual lab values and medications
+- Organized in tabbed categories: Diet | Exercise | Sleep | Supplements
+- Each tip references real patient numbers — not generic advice (e.g., "Your fasting glucose of 94 mg/dL is borderline — limit refined carbohydrates to under 150g/day")
+- Streamed in on load; cached daily in `localStorage` (`careconnect_lifestyle_tips`) — one API call per day per device
+- Refresh button clears the cache and regenerates recommendations
+
 ### AI Health Goals (Home tab)
 - AI generates 3 personalized, measurable goals tied to the patient's actual lab values (e.g. "Keep fasting glucose below 95 mg/dL")
 - Each goal shows the metric it tracks and the reason it was suggested
@@ -229,6 +236,7 @@ Frontend (React 19 + Vite + Tailwind CSS 4)
 ├── src/components/
 │   ├── AIChatModal.tsx            Streaming chat UI (SSE reader, markdown)
 │   ├── AIHealthBrief.tsx          Daily AI health brief with session cache
+│   ├── LifestyleTips.tsx          Tabbed nutrition & lifestyle recommendations (localStorage cache)
 │   ├── HomeTab.tsx                Dashboard with health score + AI brief
 │   ├── HealthTab.tsx              Lab results list
 │   ├── VisitsTab.tsx              Appointments
@@ -254,6 +262,7 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/drug-interactions    Streaming AI drug interaction checker (SSE)
 ├── POST /api/refill-request       AI-drafted prescription refill message (JSON)
 ├── POST /api/appointment-request  AI-drafted appointment request message (JSON)
+├── POST /api/lifestyle-tips       Streaming personalized nutrition & lifestyle recommendations (SSE)
 └── POST /api/suggest-goals        AI-generated health goals (JSON)
 ├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn

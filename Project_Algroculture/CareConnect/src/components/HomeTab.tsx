@@ -13,6 +13,7 @@ import { TabType, Appointment, LabReport } from '../types';
 import { AIHealthBrief } from './AIHealthBrief';
 import { HealthGoals } from './HealthGoals';
 import { MyVitals } from './MyVitals';
+import { LifestyleTips } from './LifestyleTips';
 
 interface PatientProfile { name: string; }
 
@@ -207,6 +208,9 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
 
       {/* Health Goals */}
       <HealthGoals patientContext={patientContext} />
+
+      {/* Nutrition & Lifestyle Recommendations */}
+      <LifestyleTips patientContext={patientContext} />
     </main>
   );
 };
