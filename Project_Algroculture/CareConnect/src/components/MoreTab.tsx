@@ -18,12 +18,14 @@ import {
   Copy,
   Check,
   X,
+  Download,
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
-import { Medication } from '../types';
+import { Medication, LabReport, Appointment } from '../types';
 import { loadSymptomLog } from './SymptomLogModal';
 import { MedicationReminders } from './MedicationReminders';
 import { useMedicationReminders } from '../hooks/useMedicationReminders';
+import { HealthExportModal } from './HealthExportModal';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -246,14 +248,17 @@ interface MoreTabProps {
   medications: Medication[];
   isDark: boolean;
   toggleTheme: () => void;
+  labReports: LabReport[];
+  appointments: Appointment[];
 }
 
-export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, toggleTheme }) => {
+export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, toggleTheme, labReports, appointments }) => {
   const { signOut } = useClerk();
   const activeMeds = medications.filter((m) => m.active);
   const [takenMeds, setTakenMeds] = useState<Record<string, boolean>>(loadAdherence);
   const recentLogs = loadSymptomLog().slice(0, 3);
-  const { dueAlerts, clearAlert } = useMedicationReminders();
+  const { dueAlerts, clearAlert, addAlert } = useMedicationReminders();
+  const [exportOpen, setExportOpen] = useState(false);
 
   const toggleMed = (id: string) => {
     setTakenMeds((prev) => {
@@ -395,7 +400,7 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
       )}
 
       {/* Medication Reminders */}
-      <MedicationReminders medications={medications} />
+      <MedicationReminders medications={medications} onTestAlert={addAlert} />
 
       {/* Symptom Journal */}
       {recentLogs.length > 0 && (
@@ -460,6 +465,20 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
           </button>
         </div>
 
+        {/* Export Health Summary */}
+        <button
+          onClick={() => setExportOpen(true)}
+          className="w-full p-4 flex items-center justify-between text-on-surface hover:bg-surface-container transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-surface-container rounded-xl text-primary">
+              <Download className="w-4 h-4" />
+            </div>
+            <span className="font-semibold text-sm">Export Health Summary</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-outline" />
+        </button>
+
         {[
           { icon: User, label: 'Personal Information & Medical History' },
           { icon: PhoneCall, label: 'Emergency Contacts & Caregivers' },
@@ -488,6 +507,16 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, 
       >
         <LogOut className="w-4 h-4" /> Sign Out of CareConnect
       </button>
+
+      {/* Health Export Modal */}
+      <HealthExportModal
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        patient={patient}
+        medications={medications}
+        labReports={labReports}
+        appointments={appointments}
+      />
     </main>
   );
 };

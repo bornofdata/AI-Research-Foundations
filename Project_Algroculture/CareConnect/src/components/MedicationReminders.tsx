@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, BellOff, X, Clock } from 'lucide-react';
+import { Bell, BellOff, X, Clock, Play } from 'lucide-react';
 import { Medication } from '../types';
 
 const STORAGE_KEY = 'careconnect_med_reminders';
@@ -21,35 +21,32 @@ function saveReminders(reminders: Record<string, string>) {
 
 interface MedicationRemindersProps {
   medications: Medication[];
+  onTestAlert?: (medName: string) => void;
 }
 
-export const MedicationReminders: React.FC<MedicationRemindersProps> = ({ medications }) => {
+export const MedicationReminders: React.FC<MedicationRemindersProps> = ({ medications, onTestAlert }) => {
   const activeMeds = medications.filter((m) => m.active);
   const [reminders, setReminders] = useState<Record<string, string>>(loadReminders);
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default',
   );
 
-  // Keep permission state in sync if the user changes it externally
   useEffect(() => {
     if (typeof Notification === 'undefined') return;
     setPermission(Notification.permission);
   }, []);
 
+  // Must be called from a direct button click (browser user-gesture requirement)
   const requestPermission = async () => {
     if (typeof Notification === 'undefined') return;
     const result = await Notification.requestPermission();
     setPermission(result);
+    return result;
   };
 
-  const handleTimeChange = async (medName: string, time: string) => {
-    // If permission not yet granted, ask first
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      await requestPermission();
-      // Re-read after the await so we use the latest value
-      setPermission(typeof Notification !== 'undefined' ? Notification.permission : 'default');
-    }
-
+  const handleTimeChange = (medName: string, time: string) => {
+    // Just save the time — do NOT call requestPermission() here.
+    // Browsers block permission requests that aren't from a direct click event.
     setReminders((prev) => {
       const next = { ...prev, [medName]: time };
       saveReminders(next);
@@ -66,39 +63,65 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({ medica
     });
   };
 
+  // Test button: fires an immediate in-app alert (and a native notification if permitted)
+  const handleTest = async (medName: string) => {
+    // If permission not yet asked, request now (valid user gesture — button click)
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      const result = await requestPermission();
+      if (result === 'granted') {
+        new Notification('Medication Reminder 💊', {
+          body: `Time to take your ${medName}`,
+          icon: '/icon.svg',
+        });
+      }
+    } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification('Medication Reminder 💊', {
+        body: `Time to take your ${medName}`,
+        icon: '/icon.svg',
+      });
+    }
+    // Always trigger in-app alert
+    onTestAlert?.(medName);
+  };
+
   if (activeMeds.length === 0) return null;
 
   return (
     <section className="space-y-3">
-      <h2 className="font-bold text-sm text-on-surface flex items-center gap-2">
-        <Bell className="w-4 h-4 text-secondary" />
-        Medication Reminders
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold text-sm text-on-surface flex items-center gap-2">
+          <Bell className="w-4 h-4 text-secondary" />
+          Medication Reminders
+        </h2>
+        {permission === 'default' && (
+          <button
+            onClick={requestPermission}
+            className="text-[11px] font-bold text-on-primary bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-full transition-colors"
+          >
+            Enable Alerts
+          </button>
+        )}
+        {permission === 'granted' && (
+          <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+            <Bell className="w-3 h-3" /> On
+          </span>
+        )}
+      </div>
 
       {/* Blocked warning */}
       {permission === 'denied' && (
         <div className="flex items-start gap-2 bg-error-container/30 border border-error/30 rounded-xl px-3 py-2.5 text-xs text-error">
           <BellOff className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            Browser notifications are blocked. Enable them in your browser settings to receive
-            alerts — in-app alerts will still work.
+            Notifications are blocked in your browser settings. In-app alerts will still appear.
           </span>
         </div>
       )}
 
-      {/* Permission prompt (shown once when status is default and user hasn't interacted yet) */}
       {permission === 'default' && (
-        <div className="flex items-center justify-between bg-primary-fixed/40 border border-primary/20 rounded-xl px-3 py-2.5">
-          <p className="text-xs text-on-surface">
-            Enable notifications to receive alerts at reminder times.
-          </p>
-          <button
-            onClick={requestPermission}
-            className="ml-3 shrink-0 text-[11px] font-bold text-on-primary bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-full transition-colors"
-          >
-            Allow
-          </button>
-        </div>
+        <p className="text-xs text-on-surface-variant">
+          Click <strong>Enable Alerts</strong> above to allow browser notifications, then set a time below.
+        </p>
       )}
 
       <div className="space-y-2">
@@ -123,6 +146,16 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({ medica
               />
               {reminderTime && (
                 <button
+                  onClick={() => handleTest(med.name)}
+                  aria-label={`Test reminder for ${med.name}`}
+                  title="Test this reminder now"
+                  className="p-1.5 rounded-full hover:bg-primary-container/40 text-outline hover:text-primary transition-colors shrink-0"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {reminderTime && (
+                <button
                   onClick={() => clearReminder(med.name)}
                   aria-label={`Clear reminder for ${med.name}`}
                   className="p-1.5 rounded-full hover:bg-error-container/40 text-outline hover:text-error transition-colors shrink-0"
@@ -136,7 +169,7 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({ medica
       </div>
 
       <p className="text-[10px] text-on-surface-variant text-center">
-        Daily reminders · Times stored on this device only
+        Daily reminders · Tap <Play className="w-2.5 h-2.5 inline" /> to test immediately
       </p>
     </section>
   );

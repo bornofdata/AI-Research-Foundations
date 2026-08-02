@@ -17,6 +17,7 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { ScanReportModal } from './components/ScanReportModal';
 import { VisitPrepModal } from './components/VisitPrepModal';
 import { SymptomLogModal } from './components/SymptomLogModal';
+import { LabCompareModal } from './components/LabCompareModal';
 import { SignInPage } from './components/SignInPage';
 import { usePatientData } from './hooks/usePatientData';
 import { useTheme } from './hooks/useTheme';
@@ -42,6 +43,7 @@ function AppShell() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiChatReport, setAiChatReport] = useState<LabReport | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [prepAppointment, setPrepAppointment] = useState<Appointment | null>(null);
   const [symptomLogOpen, setSymptomLogOpen] = useState(false);
 
@@ -112,6 +114,7 @@ function AppShell() {
           onOpenTrends={(report) => setActiveTrendReport(report)}
           onOpenAskFollowUp={(report) => openAIChat(report)}
           onOpenScan={() => setScanOpen(true)}
+          onOpenCompare={() => setCompareOpen(true)}
         />
       )}
       {activeTab === 'home' && (
@@ -131,7 +134,7 @@ function AppShell() {
         />
       )}
       {activeTab === 'inbox' && <InboxTab messages={messages} patientContext={patientContext} />}
-      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} isDark={isDark} toggleTheme={toggleTheme} />}
+      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} isDark={isDark} toggleTheme={toggleTheme} labReports={labReports} appointments={appointments} />}
 
       {/* Global AI FAB */}
       {!aiChatOpen && (
@@ -186,6 +189,11 @@ function AppShell() {
       />
 
       <ScanReportModal isOpen={scanOpen} onClose={() => setScanOpen(false)} />
+      <LabCompareModal
+        isOpen={compareOpen}
+        onClose={() => setCompareOpen(false)}
+        labReports={labReports}
+      />
       <SymptomLogModal isOpen={symptomLogOpen} onClose={() => setSymptomLogOpen(false)} />
 
       {prepAppointment && (

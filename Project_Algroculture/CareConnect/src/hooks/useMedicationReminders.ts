@@ -79,5 +79,12 @@ export function useMedicationReminders() {
     setDueAlerts((prev) => prev.filter((a) => a.medName !== medName));
   }, []);
 
-  return { dueAlerts, clearAlert };
+  const addAlert = useCallback((medName: string) => {
+    setDueAlerts((prev) => {
+      if (prev.some((a) => a.medName === medName)) return prev;
+      return [...prev, { medName, time: new Date().toTimeString().slice(0, 5) }];
+    });
+  }, []);
+
+  return { dueAlerts, clearAlert, addAlert };
 }

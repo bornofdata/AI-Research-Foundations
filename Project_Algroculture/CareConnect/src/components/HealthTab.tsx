@@ -9,6 +9,7 @@ import {
   Download,
   History,
   ScanLine,
+  GitCompare,
 } from 'lucide-react';
 import { LabReport } from '../types';
 
@@ -18,6 +19,7 @@ interface HealthTabProps {
   onOpenTrends: (report: LabReport) => void;
   onOpenAskFollowUp: (report: LabReport) => void;
   onOpenScan: () => void;
+  onOpenCompare: () => void;
 }
 
 export const HealthTab: React.FC<HealthTabProps> = ({
@@ -26,6 +28,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
   onOpenTrends,
   onOpenAskFollowUp,
   onOpenScan,
+  onOpenCompare,
 }) => {
   const [selectedReportId, setSelectedReportId] = useState<string>(labReports[0]?.id ?? '');
   const [copiedToast, setCopiedToast] = useState(false);
@@ -53,12 +56,20 @@ export const HealthTab: React.FC<HealthTabProps> = ({
           <h2 className="font-headline-md text-xl font-bold text-on-surface tracking-tight">
             Recent Reports
           </h2>
-          <button
-            onClick={onOpenScan}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary-container text-on-secondary-container text-xs font-bold rounded-full hover:bg-secondary/20 transition-colors active:scale-95"
-          >
-            <ScanLine className="w-3.5 h-3.5" /> Scan Report
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenCompare}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-highest text-on-surface text-xs font-bold rounded-full hover:bg-outline-variant/40 transition-colors active:scale-95"
+            >
+              <GitCompare className="w-3.5 h-3.5" /> Compare Reports
+            </button>
+            <button
+              onClick={onOpenScan}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary-container text-on-secondary-container text-xs font-bold rounded-full hover:bg-secondary/20 transition-colors active:scale-95"
+            >
+              <ScanLine className="w-3.5 h-3.5" /> Scan Report
+            </button>
+          </div>
         </div>
         <div className="flex gap-3 overflow-x-auto scroll-hide pb-2">
           {labReports.map((report) => {

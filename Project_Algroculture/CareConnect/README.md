@@ -107,6 +107,13 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Service worker caches the app shell for offline loading
 - App icon (heart + ECG pulse SVG) and correct theme colour on the device status bar
 
+### Lab Report Comparison (Health tab)
+- Select any two lab reports to compare side-by-side using the "Compare Reports" button
+- Color-coded trend arrows show improvement (green ↑), decline (red ↓), or no change
+- Arrow color determined by status transitions: moving toward optimal/normal = green, moving toward high/low = red, ambiguous = amber
+- Parameters unique to one report listed separately below the shared-parameter table
+- Shared parameters matched by name across reports; non-numeric values show a dash instead of an arrow
+
 ### Lab Report Photo Scan (Health tab)
 - "Scan Report" button at the top of the Health tab
 - Tap to upload a photo of any printed lab report (JPEG/PNG/WEBP, max 5 MB)
@@ -128,6 +135,14 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Tap any goal to mark it on track — progress shown as "X/Y on track" badge
 - Goals persist in `localStorage`; refresh button regenerates new AI suggestions
 - Sparkle icon marks AI-suggested goals vs. any future user-added ones
+
+### Health Summary Export (More tab)
+- Tap "Export Health Summary" in the More tab settings menu to open a full structured health report
+- Compiles patient info (name, DOB, MRN, insurance, blood type), health score, active medications, recent lab results with parameter tables, upcoming appointments, emergency info, and AI Health Brief
+- **Print** button calls `window.print()` with a `@media print` CSS rule that hides everything except the export area — clean black-and-white output with `@page { margin: 1cm }`
+- **Copy Summary** button copies a full plain-text version of the summary to the clipboard for pasting into emails or messages
+- Status badges degrade gracefully to text labels in print (no colored backgrounds)
+- AI Health Brief pulled from `sessionStorage` (`careconnect_health_brief`); shows "Not yet generated" if unavailable
 
 ### Symptom Journal (Home tab → More tab)
 - "Log Today's Symptoms" quick-action tile on the Home tab opens a daily log modal
