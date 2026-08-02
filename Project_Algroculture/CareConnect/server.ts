@@ -125,6 +125,58 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// ── POST /api/health-brief ───────────────────────────────────
+// Generate a concise AI health summary for the home screen.
+app.post('/api/health-brief', async (req, res) => {
+  const { patientContext } = req.body as { patientContext: string };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ error: 'GEMINI_API_KEY is not configured.' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are a health summary generator for a patient portal. Based on the patient's health record below, write a concise daily health brief with exactly 3 bullet points.
+
+Rules:
+- Bullet 1: Something going well — cite a specific lab value or metric.
+- Bullet 2: One thing to gently watch or a mild trend worth noting.
+- Bullet 3: A specific, actionable wellness tip grounded in their actual data.
+- Keep each bullet to 1 sentence, under 25 words.
+- Use plain, warm language — no medical jargon.
+- Output only the 3 bullets, no headings, no preamble, no sign-off.
+
+PATIENT RECORD:
+${patientContext}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) {
+        res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+      }
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unknown error occurred.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── GET /api/chat-history ─────────────────────────────────────
 // Load persisted chat history for the authenticated patient.
 app.get('/api/chat-history', async (req, res) => {

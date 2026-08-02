@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   User,
   Shield,
@@ -8,9 +8,24 @@ import {
   ChevronRight,
   LogOut,
   Pill,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { Medication } from '../types';
+
+const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
+
+function loadAdherence(): Record<string, boolean> {
+  try {
+    const stored = localStorage.getItem(todayKey());
+    return stored ? (JSON.parse(stored) as Record<string, boolean>) : {};
+  } catch { return {}; }
+}
+
+function saveAdherence(state: Record<string, boolean>) {
+  localStorage.setItem(todayKey(), JSON.stringify(state));
+}
 
 interface PatientProfile {
   name: string;
@@ -28,6 +43,17 @@ interface MoreTabProps {
 export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
   const { signOut } = useClerk();
   const activeMeds = medications.filter((m) => m.active);
+  const [takenMeds, setTakenMeds] = useState<Record<string, boolean>>(loadAdherence);
+
+  const toggleMed = (id: string) => {
+    setTakenMeds((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      saveAdherence(next);
+      return next;
+    });
+  };
+
+  const takenCount = activeMeds.filter((m) => takenMeds[m.id]).length;
 
   return (
     <main className="pt-20 pb-32 px-5 max-w-2xl mx-auto space-y-6 animate-fadeIn">
@@ -65,33 +91,67 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
         <p className="text-xs text-on-surface-variant">In-Network Copay: $25 Specialist / $0 Preventative Labs</p>
       </section>
 
-      {/* Current Medications */}
+      {/* Medication Adherence */}
       {activeMeds.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-bold text-sm text-on-surface flex items-center gap-2">
-            <Pill className="w-4 h-4 text-secondary" /> Current Medications
-          </h2>
-          <div className="space-y-2">
-            {activeMeds.map((med) => (
-              <div
-                key={med.id}
-                className="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant flex justify-between items-start"
-              >
-                <div>
-                  <p className="font-semibold text-sm text-on-surface">{med.name}</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">
-                    {med.dosage} · {med.frequency}
-                  </p>
-                  {med.notes && (
-                    <p className="text-[10px] text-on-surface-variant/70 mt-1 italic">{med.notes}</p>
-                  )}
-                </div>
-                <span className="text-[10px] font-bold text-secondary bg-secondary-container px-2 py-0.5 rounded-full shrink-0 ml-2">
-                  Active
-                </span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-sm text-on-surface flex items-center gap-2">
+              <Pill className="w-4 h-4 text-secondary" /> Today's Medications
+            </h2>
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+              takenCount === activeMeds.length
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-surface-container text-on-surface-variant'
+            }`}>
+              {takenCount}/{activeMeds.length} taken
+            </span>
           </div>
+
+          {takenCount === activeMeds.length && activeMeds.length > 0 && (
+            <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              All medications taken for today. Great job!
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {activeMeds.map((med) => {
+              const taken = !!takenMeds[med.id];
+              return (
+                <button
+                  key={med.id}
+                  onClick={() => toggleMed(med.id)}
+                  className={`w-full p-4 rounded-xl border flex items-center gap-3 text-left transition-all active:scale-[0.99] ${
+                    taken
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-surface-container-lowest border-outline-variant'
+                  }`}
+                >
+                  {taken
+                    ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    : <Circle className="w-5 h-5 text-outline shrink-0" />
+                  }
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold text-sm ${taken ? 'text-emerald-800 line-through' : 'text-on-surface'}`}>
+                      {med.name}
+                    </p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                      {med.dosage} · {med.frequency}
+                    </p>
+                    {med.notes && (
+                      <p className="text-[10px] text-on-surface-variant/70 mt-1 italic">{med.notes}</p>
+                    )}
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-1 ${
+                    taken ? 'bg-emerald-100 text-emerald-700' : 'bg-secondary-container text-on-secondary-container'
+                  }`}>
+                    {taken ? 'Taken' : 'Pending'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-on-surface-variant text-center">Tap a medication to mark it as taken · Resets daily</p>
         </section>
       )}
 

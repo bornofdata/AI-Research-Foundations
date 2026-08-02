@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
+import { buildPatientContext } from './lib/buildPatientContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { HealthTab } from './components/HealthTab';
@@ -74,6 +75,7 @@ function AppShell() {
           appointments={appointments}
           labReports={labReports}
           onNavigateToTab={setActiveTab}
+          patientContext={buildPatientContext(undefined, medications, historicalTrends)}
         />
       )}
       {activeTab === 'visits' && <VisitsTab appointments={appointments} />}

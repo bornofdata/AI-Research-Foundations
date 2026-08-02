@@ -2,148 +2,203 @@
 <img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
 </div>
 
-# Run and deploy your AI Studio app
+# CareConnect — AI Patient Health Portal
 
-This contains everything you need to run your app locally.
+A mobile-first patient health portal powered by Google Gemini. Patients can review lab results, appointments, medications, and doctor messages — and ask an AI assistant follow-up questions about their health data.
 
-View your app in AI Studio: https://ai.studio/apps/5f7acbb6-4437-4465-bbc3-577cdf3d81d7
+View original AI Studio project: https://ai.studio/apps/5f7acbb6-4437-4465-bbc3-577cdf3d81d7
 
 ## Run Locally
 
 **Prerequisites:** Node.js
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the Vite dev server and the Express AI server in two separate terminals:
    ```bash
-   npm run dev      # http://localhost:3000
-   npm run server   # AI server on port 3001
+   npm install
+   ```
+2. Copy `.env.example` to `.env` and fill in your keys:
+   ```
+   GEMINI_API_KEY=        # required — get at https://aistudio.google.com/apikey
+   VITE_CLERK_PUBLISHABLE_KEY=   # optional — Clerk auth
+   CLERK_SECRET_KEY=             # optional — Clerk auth
+   VITE_SUPABASE_URL=            # optional — Supabase database
+   VITE_SUPABASE_ANON_KEY=       # optional — Supabase database
+   SUPABASE_URL=                 # optional — Supabase (server-side)
+   SUPABASE_SERVICE_ROLE_KEY=    # optional — Supabase (server-side)
+   ```
+3. Run both servers in two separate terminals:
+   ```bash
+   npm run dev      # Vite frontend — http://localhost:3000
+   npm run server   # Express AI server — http://localhost:3001
    ```
 
+The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (database) activate automatically when their env vars are present, falling back to dev-mode and localStorage otherwise.
+
 ---
 
-## What Was Built
+## Features
 
-CareConnect is a patient health portal where patients can ask AI-powered follow-up questions about their lab results, appointments, doctor messages, and health history.
+### AI Chat Assistant
+- Streaming AI responses via Google Gemini (`gemini-flash-latest`)
+- Opened from any tab via the global floating "Ask AI" button
+- Opened in report context from the Health tab ("Ask AI" on a specific lab report)
+- Suggested question chips on first open
+- Markdown-rendered responses (bold, bullets, headings)
+- Medical disclaimer on every response
+- AI flags concerns with **⚠️ Worth noting:** and suggests tests with **💡 Consider asking about:**
+- Clear chat with confirmation dialog
 
-### Files Added / Modified
+### AI Health Brief (Home tab)
+- Gemini-generated 3-bullet daily health summary on the Home tab
+- Specific to the patient's actual lab values and medications
+- Streamed in on load; cached in `sessionStorage` for the day (one API call per session)
+- Refresh button to regenerate
 
-| File | What it does |
+### Health Score (Home tab)
+- Aggregate score (0–100) computed from all lab parameters
+- Color-coded circular gauge: Excellent / Good / Fair / Needs Attention
+- Based on status weights: Optimal=100, Normal=85, Review=55, High/Low=45
+
+### Medication Adherence Tracker (More tab)
+- Daily checklist of active medications — tap to mark taken
+- Progress shown as "X/Y taken" badge
+- Completion celebration message when all meds are taken
+- State stored in `localStorage` keyed by date — resets automatically each day
+
+### Chat History Persistence
+- **With Supabase:** history saved server-side per patient, persists across devices and sessions
+- **Without Supabase:** history saved to `localStorage`, persists per device
+- Separate history per lab report context vs. global chat
+
+### Auth (Clerk)
+- Sign-in/sign-up gate when `VITE_CLERK_PUBLISHABLE_KEY` is set
+- Works in dev mode (no auth) without any Clerk keys
+- Sign Out button in the More tab
+
+---
+
+## Architecture
+
+```
+Frontend (React 19 + Vite + Tailwind CSS 4)
+│
+├── src/App.tsx                    State hub, tab routing, AI chat state
+├── src/components/
+│   ├── AIChatModal.tsx            Streaming chat UI (SSE reader, markdown)
+│   ├── AIHealthBrief.tsx          Daily AI health brief with session cache
+│   ├── HomeTab.tsx                Dashboard with health score + AI brief
+│   ├── HealthTab.tsx              Lab results list
+│   ├── VisitsTab.tsx              Appointments
+│   ├── InboxTab.tsx               Doctor messages
+│   └── MoreTab.tsx                Profile, medications, adherence tracker
+├── src/lib/
+│   ├── buildPatientContext.ts     Serialises patient data → Gemini prompt
+│   ├── queries.ts                 Typed Supabase query functions
+│   └── supabase.ts                Supabase client
+├── src/hooks/
+│   └── usePatientData.ts          Loads from Supabase or falls back to mock
+│
+Express AI Server (server.ts — port 3001)
+├── POST /api/chat                 Streaming Gemini chat (SSE)
+├── POST /api/health-brief         Streaming daily health summary (SSE)
+├── GET  /api/chat-history         Load persisted chat (requires Supabase + Clerk)
+├── POST /api/chat-history         Save a chat turn
+└── DELETE /api/chat-history       Clear chat history
+│
+Supabase (PostgreSQL)
+└── Tables: patients, lab_reports, test_parameters, physician_notes,
+            appointments, medications, messages, chat_history,
+            historical_trends, notifications
+    RLS enabled on all tables — patients see only their own rows
+```
+
+**Key design principle:** `buildPatientContext.ts` is the single data serialisation point. It accepts real Supabase data or falls back to mock data for any field not provided. Replacing mock data with real backend calls requires changing only this one file.
+
+---
+
+## Stack
+
+| Layer | Technology |
 |---|---|
-| `server.ts` | Express server on port 3001 with `POST /api/chat`. Calls Gemini 2.0 Flash and streams back SSE chunks. |
-| `src/lib/buildPatientContext.ts` | Serialises all patient data (labs + trends + appointments + messages) into a structured prompt string. |
-| `src/components/AIChatModal.tsx` | Full streaming chat UI — handles SSE, typing indicator, suggested question chips, and medical disclaimer. |
-| `src/App.tsx` | Uses `AIChatModal` for the "Ask AI" flow; adds a global floating AI button visible on all tabs. |
-| `src/components/HealthTab.tsx` | "Ask follow-up" button updated to "Ask AI". |
-| `vite.config.ts` | Proxies `/api` requests to `http://localhost:3001`. |
-| `package.json` | Adds `npm run server` script. |
-
-### AI System Behaviour
-
-The Gemini system prompt instructs the model to:
-
-- Explain lab results in plain, accessible language
-- Cross-reference results across multiple reports and historical trends
-- Prefix any concerns not addressed by the physician with **⚠️ Worth noting:**
-- Suggest missing or complementary tests with **💡 Consider asking about:**
-- Always close responses with a medical disclaimer
-
-The AI chat can be opened two ways:
-- **From a specific report** — click "Ask AI" under the physician note in the Health tab (the report is passed as focused context)
-- **Globally** — tap the floating "Ask AI" button visible on every tab (full patient record as context)
+| Frontend | React 19 + TypeScript + Vite |
+| Styling | Tailwind CSS 4 + Material Design 3 tokens |
+| AI | Google Gemini (`gemini-flash-latest`) via `@google/genai` |
+| Auth | Clerk (`@clerk/clerk-react`, `@clerk/express`) |
+| Database | Supabase (PostgreSQL) with Row-Level Security |
+| AI Server | Express.js + Node.js |
+| Streaming | Server-Sent Events (SSE) |
 
 ---
 
-## Stack & Scaling
+## Database Setup (Supabase)
 
-The React + TypeScript frontend is the right long-term choice. The current Express/Node.js AI backend is suitable for MVP. Below is the recommended evolution path for production scale:
-
-| Layer | Current (MVP) | At Scale |
-|---|---|---|
-| **Frontend** | React + Vite | Same, or Next.js for SSR |
-| **AI backend** | Express + Gemini (Node.js) | Python + FastAPI |
-| **Patient data** | Mock JSON | PostgreSQL + row-level security |
-| **RAG / retrieval** | Full context injected per request | pgvector or Pinecone |
-| **Auth** | None | Auth0 / Clerk + HIPAA BAA |
-
-**Why Python for the AI layer at scale:**
-- The RAG ecosystem (LangChain, LlamaIndex, sentence-transformers, Haystack) is Python-first
-- Medical NLP libraries (spaCy, scispaCy, MedSpaCy) are Python-only
-- Vector search, fine-tuning, and embedding pipelines are far easier to build and maintain in Python
-
-**The migration path is smooth** — `src/lib/buildPatientContext.ts` is the only file that touches patient data. When moving to a real backend, replace that one function with an API call and nothing else changes.
+1. Go to your Supabase project → SQL Editor
+2. Run `src/components/schema.sql` to create all tables with RLS policies
+3. Sign up at `http://localhost:3000` to get your Clerk user ID
+4. Replace `REPLACE_WITH_YOUR_CLERK_USER_ID` in `src/components/seed.sql` (3 places) with your ID
+5. Run `src/components/seed.sql` to load the mock patient data
 
 ---
 
 ## Production Roadmap
 
-### Must-haves before any real patient uses this
+### Infrastructure (before any real patients)
 
-**1. Authentication & identity**
-Right now there's no login — anyone with the URL sees Sarah's data. Auth0 or Clerk handles auth, with each patient seeing only their own records. Non-negotiable before sharing with anyone outside your local network.
+**1. HTTPS everywhere**
+The app runs over HTTP. Add a reverse proxy (Caddy or Nginx) or deploy to Vercel/Railway which include HTTPS automatically.
 
-**2. Real backend + database**
-All data is mock JSON. A PostgreSQL database with row-level security ensures patient A can never query patient B's records, even if something goes wrong at the app layer.
-
-**3. HTTPS everywhere**
-The app runs over HTTP. Phones on the same Wi-Fi can see the traffic. Before any real data touches the app, it needs TLS — add a reverse proxy (Caddy or Nginx) or deploy to Vercel/Railway which include HTTPS automatically.
-
-**4. HIPAA compliance**
-For any US deployment handling real health data:
-- A Business Associate Agreement (BAA) with Google — use Vertex AI, not AI Studio
+**2. HIPAA compliance**
+For US deployments handling real health data:
+- Business Associate Agreement (BAA) with Google — use Vertex AI, not AI Studio
 - Audit logs of who accessed what and when
 - Data encryption at rest
 
----
+### Product Features
 
-### Features that make it a real product
+**3. Real lab data ingestion**
+Labs send results via HL7 FHIR. A FHIR API connector ingests results automatically from Quest, LabCorp, etc.
 
-**5. Multi-patient support + doctor dashboard**
-A physician view where Dr. Chen can see all her patients, flag results, and respond to AI-surfaced concerns. Without this it's a one-sided tool.
+**4. Push notifications**
+Service worker (PWA) or native app wrapper to notify patients when new results arrive.
 
-**6. Real lab data ingestion**
-Labs send results via HL7 FHIR (the standard healthcare data format). A FHIR API connector ingests results automatically from Quest, LabCorp, etc. — no manual data entry.
+**5. Doctor-in-the-loop on AI flags**
+When the AI flags a concern with ⚠️, surface it to the physician as a review queue item.
 
-**7. Push notifications**
-When a new result arrives, the patient should get a push notification on their phone. Requires a service worker (PWA push) or a native app wrapper.
+**6. Multi-patient support + doctor dashboard**
+A physician view showing all patients, AI-surfaced concerns, and a message queue.
 
-**8. Server-side chat history**
-localStorage only persists on one device. A patient switching from phone to desktop loses their chat. Conversations need to live server-side, tied to the patient's account.
+**7. Medication reminders**
+Push notifications at medication schedule times, synced with the adherence tracker.
 
-**9. Doctor-in-the-loop on AI flags**
-When the AI flags something with ⚠️, that flag should optionally surface to Dr. Chen — not be buried in the patient's chat. A simple review queue: "AI flagged 3 concerns from Sarah's results this week."
+### Scalability
 
-**10. Medication context**
-No medications are in the current data model. Adding a medications list to the patient profile lets the AI warn about drug interactions and explain results that are caused by medications — dramatically improving its usefulness.
+**8. RAG instead of full-context injection**
+Currently the entire patient record goes into every prompt. With years of records, switch to pgvector or Pinecone to retrieve only relevant chunks per question.
 
----
+**9. Rate limiting & cost controls**
+Per-user request rate limiting and daily token budgets on the Express server.
 
-### Scalability (technical)
+**10. Semantic caching**
+Cache AI answers for common questions (e.g., "what does A1C measure?") by embedding similarity — cuts AI costs 30–50%.
 
-**11. Move from full-context injection to RAG**
-Right now the entire patient record goes into every Gemini prompt. For a patient with years of records and dozens of lab reports, this becomes expensive and hits context limits. The fix is a vector database (pgvector in PostgreSQL, or Pinecone) — embed the patient's records and retrieve only relevant chunks per question.
-
-**12. Rate limiting & cost controls**
-One patient asking hundreds of questions in a session can run up a large API bill. The Express server needs per-user rate limiting and a token budget per day.
-
-**13. Semantic caching**
-Questions like "what does A1C measure?" have the same answer for every patient. A semantic cache (store embeddings of past questions, return cached answers for similar ones) can cut AI costs by 30–50%.
-
----
-
-### Recommended order of implementation
+### Recommended implementation order
 
 | Priority | What |
 |---|---|
-| 1 | Auth + HTTPS — before sharing with anyone outside your network |
-| 2 | Real database + multi-patient support |
-| 3 | Server-side chat history |
-| 4 | Medication context in the AI |
-| 5 | Push notifications |
-| 6 | FHIR ingestion |
-| 7 | Doctor dashboard |
-| 8 | RAG (when you have enough real patient data to need it) |
-| 9 | HIPAA / BAA (when onboarding real patients) |
+| 1 | HTTPS — before sharing outside your local network |
+| 2 | Push notifications |
+| 3 | FHIR data ingestion |
+| 4 | Doctor dashboard |
+| 5 | Medication reminders |
+| 6 | RAG (when data volume grows) |
+| 7 | HIPAA / BAA (when onboarding real patients) |
 
-The first three are pure infrastructure. The rest are product features that can be built incrementally. The architecture — one context builder function, one server endpoint, one chat component — is designed to accommodate all of these without rewriting anything major.
+### Scaling the AI layer
+
+The Express/Node.js backend is suitable for MVP. At scale, the AI layer benefits from Python:
+
+- The RAG ecosystem (LangChain, LlamaIndex, sentence-transformers) is Python-first
+- Medical NLP libraries (spaCy, scispaCy, MedSpaCy) are Python-only
+- Vector search, fine-tuning, and embedding pipelines are easier in Python
+
+The migration is smooth — `buildPatientContext.ts` is the only file that touches patient data. Replace it with a Python API call and nothing else changes.

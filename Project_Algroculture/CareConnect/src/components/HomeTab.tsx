@@ -1,17 +1,14 @@
 import React from 'react';
 import {
   Calendar,
-  Clock,
   MapPin,
   ChevronRight,
   Stethoscope,
   Activity,
-  ShieldCheck,
-  Sparkles,
-  Heart,
   FileText,
 } from 'lucide-react';
 import { TabType, Appointment, LabReport } from '../types';
+import { AIHealthBrief } from './AIHealthBrief';
 
 interface PatientProfile { name: string; }
 
@@ -20,11 +17,24 @@ interface HomeTabProps {
   appointments: Appointment[];
   labReports: LabReport[];
   onNavigateToTab: (tab: TabType) => void;
+  patientContext: string;
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab }) => {
+function computeHealthScore(labReports: LabReport[]) {
+  const allParams = labReports.flatMap((r) => r.parameters);
+  if (!allParams.length) return null;
+  const weights: Record<string, number> = { optimal: 100, normal: 85, review: 55, high: 45, low: 45 };
+  const avg = allParams.reduce((sum, p) => sum + (weights[p.status] ?? 50), 0) / allParams.length;
+  const score = Math.round(avg);
+  const label = score >= 90 ? 'Excellent' : score >= 80 ? 'Good' : score >= 65 ? 'Fair' : 'Needs Attention';
+  const color = score >= 90 ? 'text-emerald-600' : score >= 80 ? 'text-primary' : score >= 65 ? 'text-amber-600' : 'text-error';
+  const ring = score >= 90 ? 'border-emerald-400' : score >= 80 ? 'border-primary' : score >= 65 ? 'border-amber-400' : 'border-error';
+  return { score, label, color, ring };
+}
+
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext }) => {
   const nextAppointment = appointments.find((a) => a.status === 'upcoming');
-  const latestReport = labReports[0];
+  const healthScore = computeHealthScore(labReports);
 
   return (
     <main className="pt-20 pb-32 px-5 max-w-2xl mx-auto space-y-6 animate-fadeIn">
@@ -116,7 +126,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
         </div>
       </section>
 
-      {/* Vitals Summary Card */}
+      {/* Vitals Summary + Health Score */}
       <section className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant space-y-3">
         <div className="flex justify-between items-center">
           <h2 className="font-bold text-sm text-on-surface flex items-center gap-1.5">
@@ -144,18 +154,24 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
             <span className="text-[10px] text-secondary font-semibold">Normal</span>
           </div>
         </div>
+
+        {healthScore && (
+          <div className="flex items-center gap-4 pt-2 border-t border-outline-variant/40">
+            <div className={`w-14 h-14 rounded-full border-4 ${healthScore.ring} flex flex-col items-center justify-center shrink-0`}>
+              <span className={`font-bold text-base leading-none ${healthScore.color}`}>{healthScore.score}</span>
+              <span className="text-[9px] text-on-surface-variant leading-none mt-0.5">/ 100</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-on-surface">Overall Health Score</p>
+              <p className={`text-xs font-semibold ${healthScore.color}`}>{healthScore.label}</p>
+              <p className="text-[10px] text-on-surface-variant mt-0.5">Based on {labReports.flatMap(r => r.parameters).length} lab parameters</p>
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* Preventive Wellness Note */}
-      <div className="p-4 bg-secondary-container/40 rounded-2xl border border-secondary-fixed flex items-start gap-3">
-        <Sparkles className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
-        <div className="text-xs text-on-secondary-container space-y-1">
-          <p className="font-bold">Personalized Wellness Advice</p>
-          <p className="leading-relaxed">
-            Your fasting glucose trends reflect great dietary control. Maintaining 30 minutes of routine daily activity will help preserve your optimal lipid score.
-          </p>
-        </div>
-      </div>
+      {/* AI Health Brief */}
+      <AIHealthBrief patientContext={patientContext} />
     </main>
   );
 };
