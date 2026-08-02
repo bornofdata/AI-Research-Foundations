@@ -38,6 +38,17 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 
 ## Features
 
+### AI Symptom Checker & Triage (Home tab)
+- "Check Symptoms" quick-action tile on the Home tab opens a full-screen triage modal
+- Describe symptoms in free text or tap quick chips (Headache, Chest Pain, Shortness of Breath, Nausea, Fatigue, Dizziness, Fever, Abdominal Pain) to append them instantly
+- Character limit: 500 characters with live counter
+- AI assesses urgency using one of four levels: 🔴 Emergency / 🟠 See a Doctor Soon / 🟡 Monitor Closely / 🟢 Self-Care
+- Color-coded urgency badge prominently displayed at the top of results (red / orange / amber / green)
+- Personalized to the patient's health data — possible causes reference actual conditions and medications
+- Full streamed response rendered with markdown: Urgency Level, Possible Causes, What to Do Now, Warning Signs, and a medical disclaimer
+- Quick actions after results: "Message Dr. Chen" (shown for Emergency or See a Doctor Soon) navigates directly to Inbox; "Log These Symptoms" opens the Symptom Journal
+- 911 disclaimer shown on the input screen; streaming response ends with a non-diagnosis reminder
+
 ### Manual Vital Signs Logging (Home tab)
 - "Log Reading" button in the "My Vitals" section opens a modal to enter blood pressure, heart rate, blood glucose, weight, and SpO2
 - Fields are all optional — patients fill whichever readings they have
@@ -263,7 +274,8 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/refill-request       AI-drafted prescription refill message (JSON)
 ├── POST /api/appointment-request  AI-drafted appointment request message (JSON)
 ├── POST /api/lifestyle-tips       Streaming personalized nutrition & lifestyle recommendations (SSE)
-└── POST /api/suggest-goals        AI-generated health goals (JSON)
+├── POST /api/suggest-goals        AI-generated health goals (JSON)
+└── POST /api/symptom-check        Streaming clinical triage assessment from symptom description (SSE)
 ├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn
 └── DELETE /api/chat-history       Clear chat history

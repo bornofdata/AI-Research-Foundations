@@ -18,6 +18,7 @@ import { ScanReportModal } from './components/ScanReportModal';
 import { VisitPrepModal } from './components/VisitPrepModal';
 import { AppointmentRequestModal } from './components/AppointmentRequestModal';
 import { SymptomLogModal } from './components/SymptomLogModal';
+import { SymptomCheckerModal } from './components/SymptomCheckerModal';
 import { VitalsLogModal } from './components/VitalsLogModal';
 import { TimelineModal } from './components/TimelineModal';
 import { LabCompareModal } from './components/LabCompareModal';
@@ -49,6 +50,7 @@ function AppShell() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [prepAppointment, setPrepAppointment] = useState<Appointment | null>(null);
   const [symptomLogOpen, setSymptomLogOpen] = useState(false);
+  const [symptomCheckerOpen, setSymptomCheckerOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [vitalsLogOpen, setVitalsLogOpen] = useState(false);
   const [vitalsRefreshKey, setVitalsRefreshKey] = useState(0);
@@ -164,6 +166,7 @@ function AppShell() {
           onOpenTimeline={() => setTimelineOpen(true)}
           onOpenVitalsLog={() => setVitalsLogOpen(true)}
           vitalsRefreshKey={vitalsRefreshKey}
+          onOpenSymptomChecker={() => setSymptomCheckerOpen(true)}
         />
       )}
       {activeTab === 'visits' && (
@@ -235,6 +238,13 @@ function AppShell() {
         labReports={labReports}
       />
       <SymptomLogModal isOpen={symptomLogOpen} onClose={() => setSymptomLogOpen(false)} />
+      <SymptomCheckerModal
+        isOpen={symptomCheckerOpen}
+        onClose={() => setSymptomCheckerOpen(false)}
+        patientContext={patientContext}
+        onNavigateToInbox={() => setActiveTab('inbox')}
+        onOpenSymptomLog={() => { setSymptomCheckerOpen(false); setSymptomLogOpen(true); }}
+      />
       <VitalsLogModal
         isOpen={vitalsLogOpen}
         onClose={() => setVitalsLogOpen(false)}

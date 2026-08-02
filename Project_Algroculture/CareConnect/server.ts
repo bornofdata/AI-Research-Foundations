@@ -663,6 +663,68 @@ Generate personalized nutrition and lifestyle recommendations for this patient: 
   }
 });
 
+// ── POST /api/symptom-check ───────────────────────────────────
+// Stream a clinical triage assessment for described symptoms.
+app.post('/api/symptom-check', async (req, res) => {
+  const { symptoms, patientContext } = req.body as {
+    symptoms: string;
+    patientContext: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+  if (!symptoms?.trim()) { res.status(400).json({ error: 'symptoms is required.' }); return; }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are a clinical triage assistant helping a patient understand their symptoms.
+Analyze the described symptoms in context of the patient's health data and respond with this exact structure:
+
+## Urgency Level
+State exactly one of: 🔴 Emergency, 🟠 See a Doctor Soon, 🟡 Monitor Closely, 🟢 Self-Care
+
+Then one sentence explaining why.
+
+## Possible Causes
+List 2-4 possible explanations as bullet points (- item), most likely first. Reference the patient's conditions/medications where relevant.
+
+## What to Do Now
+List 3-4 specific action steps as bullet points.
+
+## Warning Signs
+List 3 specific symptoms that would mean the patient should seek immediate care.
+
+Always end with:
+*This is not a medical diagnosis. If you are unsure or symptoms worsen, contact your healthcare provider or call 911.*
+
+Patient describes these symptoms: ${symptoms}
+
+Patient health context: ${patientContext}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── POST /api/suggest-goals ───────────────────────────────────
 // Generate 3 personalized health goals from the patient's record.
 app.post('/api/suggest-goals', async (req, res) => {

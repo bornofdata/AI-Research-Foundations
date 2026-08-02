@@ -8,6 +8,7 @@ import {
   FileText,
   NotebookPen,
   History,
+  Search,
 } from 'lucide-react';
 import { TabType, Appointment, LabReport } from '../types';
 import { AIHealthBrief } from './AIHealthBrief';
@@ -27,6 +28,7 @@ interface HomeTabProps {
   onOpenTimeline: () => void;
   onOpenVitalsLog: () => void;
   vitalsRefreshKey: number;
+  onOpenSymptomChecker: () => void;
 }
 
 function computeHealthScore(labReports: LabReport[]) {
@@ -41,7 +43,7 @@ function computeHealthScore(labReports: LabReport[]) {
   return { score, label, color, ring };
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline, onOpenVitalsLog, vitalsRefreshKey }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline, onOpenVitalsLog, vitalsRefreshKey, onOpenSymptomChecker }) => {
   const nextAppointment = appointments.find((a) => a.status === 'upcoming');
   const healthScore = computeHealthScore(labReports);
 
@@ -130,6 +132,19 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
             <div>
               <h3 className="font-bold text-sm text-on-surface">Ask Care Team</h3>
               <p className="text-xs text-on-surface-variant">Message Dr. Emily Chen</p>
+            </div>
+          </button>
+
+          <button
+            onClick={onOpenSymptomChecker}
+            className="col-span-2 p-4 bg-surface-container rounded-2xl border border-outline-variant/60 text-left hover:border-primary/50 transition-all flex items-center gap-4 group"
+          >
+            <div className="w-10 h-10 bg-primary-container text-on-primary-container rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Search className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-on-surface">Check Symptoms</h3>
+              <p className="text-xs text-on-surface-variant">AI triage &amp; assessment</p>
             </div>
           </button>
 
