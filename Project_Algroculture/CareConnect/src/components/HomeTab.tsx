@@ -135,24 +135,19 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
           <span className="text-[11px] text-on-surface-variant">Sync: Today 8:00 AM</span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-3 bg-surface-container rounded-xl">
-            <span className="text-[11px] text-on-surface-variant block">Glucose</span>
-            <span className="font-bold text-base text-primary">94 mg/dL</span>
-            <span className="text-[10px] text-secondary font-semibold">Normal</span>
-          </div>
-
-          <div className="p-3 bg-surface-container rounded-xl">
-            <span className="text-[11px] text-on-surface-variant block">Blood Pressure</span>
-            <span className="font-bold text-base text-primary">118/76</span>
-            <span className="text-[10px] text-secondary font-semibold">Optimal</span>
-          </div>
-
-          <div className="p-3 bg-surface-container rounded-xl">
-            <span className="text-[11px] text-on-surface-variant block">Resting HR</span>
-            <span className="font-bold text-base text-primary">68 bpm</span>
-            <span className="text-[10px] text-secondary font-semibold">Normal</span>
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Glucose', value: '94', unit: 'mg/dL', status: 'Normal', color: 'text-primary' },
+            { label: 'Blood Pressure', value: '118/76', unit: 'mmHg', status: 'Optimal', color: 'text-emerald-600' },
+            { label: 'Resting HR', value: '68', unit: 'bpm', status: 'Normal', color: 'text-primary' },
+          ].map(({ label, value, unit, status, color }) => (
+            <div key={label} className="p-3 bg-surface-container rounded-xl flex flex-col items-center text-center gap-1">
+              <span className="text-[10px] text-on-surface-variant leading-tight">{label}</span>
+              <span className={`font-bold text-xl leading-none ${color}`}>{value}</span>
+              <span className="text-[10px] text-on-surface-variant leading-none">{unit}</span>
+              <span className="text-[10px] font-semibold text-secondary mt-0.5">{status}</span>
+            </div>
+          ))}
         </div>
 
         {healthScore && (
