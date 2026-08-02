@@ -16,6 +16,7 @@ import { AIChatModal } from './components/AIChatModal';
 import { NotificationsModal } from './components/NotificationsModal';
 import { ScanReportModal } from './components/ScanReportModal';
 import { VisitPrepModal } from './components/VisitPrepModal';
+import { AppointmentRequestModal } from './components/AppointmentRequestModal';
 import { SymptomLogModal } from './components/SymptomLogModal';
 import { TimelineModal } from './components/TimelineModal';
 import { LabCompareModal } from './components/LabCompareModal';
@@ -49,12 +50,27 @@ function AppShell() {
   const [symptomLogOpen, setSymptomLogOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
+  const [apptRequestOpen, setApptRequestOpen] = useState(false);
 
   // Build patient context once; passed to AI-powered components
   const patientContext = useMemo(
     () => buildPatientContext(undefined, medications, historicalTrends),
     [medications, historicalTrends],
   );
+
+  const handleApptRequestSent = (aiDraftedMessage: string) => {
+    const newMsg: Message = {
+      id: `appt-${Date.now()}`,
+      senderName: patient.name,
+      senderRole: 'Patient',
+      senderAvatar: '',
+      text: `Appointment Request\n\n${aiDraftedMessage}`,
+      timestamp: 'Just now',
+      isDoctor: false,
+    };
+    setPendingMessages((prev) => [...prev, newMsg]);
+    setActiveTab('inbox');
+  };
 
   const handleRefillSent = (aiDraftedMessage: string, medicationName: string) => {
     const newMsg: Message = {
@@ -149,6 +165,7 @@ function AppShell() {
         <VisitsTab
           appointments={appointments}
           onPrepVisit={(apt) => setPrepAppointment(apt)}
+          onRequestAppointment={() => setApptRequestOpen(true)}
         />
       )}
       {activeTab === 'inbox' && <InboxTab messages={[...messages, ...pendingMessages]} patientContext={patientContext} />}
@@ -220,6 +237,13 @@ function AppShell() {
         appointments={appointments}
         messages={messages}
         medications={medications}
+      />
+
+      <AppointmentRequestModal
+        isOpen={apptRequestOpen}
+        onClose={() => setApptRequestOpen(false)}
+        patientContext={patientContext}
+        onRequestSent={handleApptRequestSent}
       />
 
       {prepAppointment && (

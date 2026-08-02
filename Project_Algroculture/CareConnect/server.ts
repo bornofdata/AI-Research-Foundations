@@ -512,6 +512,45 @@ Draft a refill request for ${medicationName} ${dosage} ${frequency}. Optional pa
   }
 });
 
+// ── POST /api/appointment-request ────────────────────────────
+// AI-draft a professional appointment request message.
+app.post('/api/appointment-request', async (req, res) => {
+  const { visitType, preferredDate, preferredTime, reason, patientContext } = req.body as {
+    visitType: string;
+    preferredDate: string;
+    preferredTime: string;
+    reason: string;
+    patientContext: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `You are a patient portal assistant drafting an appointment request to a physician's office.
+Write a professional, warm appointment request message (3-5 sentences) from the patient's perspective.
+Include the visit type, preferred date and time of day, and reason for visit. Reference relevant health context where appropriate (e.g., if requesting a diabetes follow-up, mention their recent glucose readings). Keep a polite, clear tone. Do not include a subject line or greeting — just the body text.
+
+Draft an appointment request for a ${visitType} visit. Preferred date: ${preferredDate}, preferred time: ${preferredTime}. Reason: ${reason || 'routine follow-up'}. Patient context: ${patientContext}`,
+        }],
+      }],
+    });
+
+    const message = response.text ?? 'Unable to draft appointment request.';
+    res.json({ message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.status(500).json({ error: message });
+  }
+});
+
 // ── POST /api/suggest-goals ───────────────────────────────────
 // Generate 3 personalized health goals from the patient's record.
 app.post('/api/suggest-goals', async (req, res) => {

@@ -6,6 +6,7 @@ import {
   Plus,
   CheckCircle2,
   ClipboardList,
+  CalendarPlus,
 } from 'lucide-react';
 import { DR_EMILY_CHEN } from '../data/mockData';
 import { Appointment } from '../types';
@@ -13,9 +14,10 @@ import { Appointment } from '../types';
 interface VisitsTabProps {
   appointments: Appointment[];
   onPrepVisit: (appointment: Appointment) => void;
+  onRequestAppointment: () => void;
 }
 
-export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onPrepVisit }) => {
+export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onPrepVisit, onRequestAppointment }) => {
   const [appointmentsList, setAppointmentsList] = useState<Appointment[]>(appointments);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(DR_EMILY_CHEN.name);
@@ -61,6 +63,15 @@ export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onPrepVisit 
           <Plus className="w-4 h-4" /> Book Visit
         </button>
       </div>
+
+      {/* Request New Appointment */}
+      <button
+        onClick={onRequestAppointment}
+        className="w-full flex items-center justify-center gap-2 py-3 border-2 border-primary/30 text-primary font-bold text-sm rounded-2xl hover:bg-primary/5 transition-colors"
+      >
+        <CalendarPlus className="w-5 h-5" />
+        Request New Appointment
+      </button>
 
       {/* Upcoming Visits List */}
       <section className="space-y-3">
