@@ -13,11 +13,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   setActiveTab,
   unreadMessagesCount = 1,
 }) => {
+  const handleTabPress = (tab: TabType) => {
+    if (tab === activeTab) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
   return (
     <nav className="fixed bottom-0 w-full z-40 flex justify-around items-center px-2 py-2.5 bg-surface-container shadow-[0_-4px_24px_rgba(0,49,120,0.06)] rounded-t-xl border-t border-outline-variant/30 backdrop-blur-md">
       {/* Home */}
       <button
-        onClick={() => setActiveTab('home')}
+        onClick={() => handleTabPress('home')}
         className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-200 active:scale-90 ${
           activeTab === 'home'
             ? 'bg-primary-container text-on-primary-container px-4 py-1.5'
@@ -30,7 +38,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
       {/* Visits */}
       <button
-        onClick={() => setActiveTab('visits')}
+        onClick={() => handleTabPress('visits')}
         className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-200 active:scale-90 ${
           activeTab === 'visits'
             ? 'bg-primary-container text-on-primary-container px-4 py-1.5'
@@ -43,7 +51,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
       {/* Inbox */}
       <button
-        onClick={() => setActiveTab('inbox')}
+        onClick={() => handleTabPress('inbox')}
         className={`relative flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-200 active:scale-90 ${
           activeTab === 'inbox'
             ? 'bg-primary-container text-on-primary-container px-4 py-1.5'
@@ -59,7 +67,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
       {/* Health (Lab Results) */}
       <button
-        onClick={() => setActiveTab('health')}
+        onClick={() => handleTabPress('health')}
         className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-200 active:scale-90 ${
           activeTab === 'health'
             ? 'bg-primary-container text-on-primary-container px-4 py-1.5'
@@ -72,7 +80,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
       {/* More */}
       <button
-        onClick={() => setActiveTab('more')}
+        onClick={() => handleTabPress('more')}
         className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-200 active:scale-90 ${
           activeTab === 'more'
             ? 'bg-primary-container text-on-primary-container px-4 py-1.5'
