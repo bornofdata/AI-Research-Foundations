@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, TrendingUp, Calendar, Download, Info, CheckCircle2 } from 'lucide-react';
 import { HISTORICAL_TRENDS } from '../data/mockData';
 import { LabReport } from '../types';
+import { TrendChart } from './TrendChart';
 
 interface TrendAnalysisModalProps {
   isOpen: boolean;
@@ -26,6 +27,39 @@ export const TrendAnalysisModal: React.FC<TrendAnalysisModalProps> = ({
     sodium: { name: 'Sodium', unit: 'mmol/L', target: '135 - 145 mmol/L', current: 140, trend: 'Stable', color: '#0d47a1' },
     potassium: { name: 'Potassium', unit: 'mmol/L', target: '3.5 - 5.1 mmol/L', current: 4.2, trend: '+0.2 vs 6mo ago', color: '#045142' },
   };
+
+  // Parse reference range strings like "70 - 99 mg/dL", "< 5.7 %", "> 40 mg/dL"
+  const parseReferenceRange = (range: string): { min?: number; max?: number } => {
+    const rangeMatch = range.match(/^([\d.]+)\s*[-–]\s*([\d.]+)/);
+    if (rangeMatch) {
+      return { min: parseFloat(rangeMatch[1]), max: parseFloat(rangeMatch[2]) };
+    }
+    const ltMatch = range.match(/^<\s*([\d.]+)/);
+    if (ltMatch) {
+      return { max: parseFloat(ltMatch[1]) };
+    }
+    const gtMatch = range.match(/^>\s*([\d.]+)/);
+    if (gtMatch) {
+      return { min: parseFloat(gtMatch[1]) };
+    }
+    return {};
+  };
+
+  // Build recharts data from real HISTORICAL_TRENDS using short month labels
+  const chartData = useMemo(
+    () =>
+      HISTORICAL_TRENDS.map((t) => ({
+        date: t.date.split(' ')[0], // e.g. "May"
+        value: t[selectedMetric],
+      })),
+    [selectedMetric],
+  );
+
+  // Reference range from metricMeta target string
+  const { min: refMin, max: refMax } = useMemo(
+    () => parseReferenceRange(metricMeta[selectedMetric].target),
+    [selectedMetric],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -236,6 +270,15 @@ export const TrendAnalysisModal: React.FC<TrendAnalysisModalProps> = ({
               </svg>
             </div>
           </div>
+
+          {/* Recharts Trend Chart */}
+          <TrendChart
+            data={chartData}
+            unit={currentMeta.unit}
+            metricName={currentMeta.name}
+            referenceMin={refMin}
+            referenceMax={refMax}
+          />
 
           {/* AI Clinical Insight */}
           <div className="p-3 bg-secondary-container/50 border border-secondary-fixed rounded-xl flex gap-3 items-start text-xs text-on-secondary-container">

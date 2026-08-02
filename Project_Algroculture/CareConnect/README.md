@@ -91,6 +91,13 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Response rendered with markdown formatting
 - Falls back to a polite static message if the AI call fails
 
+### Biometric Trend Charts (Trend Analysis modal)
+- Interactive Recharts line chart for each metric (Glucose, A1C, Sodium, Potassium) in the Trend Analysis modal
+- Plots real historical data points from `HISTORICAL_TRENDS` (May–Oct 2023) with labeled month ticks
+- Dashed reference lines show the normal Min/Max bounds for each metric (parsed from the target range string)
+- Renders above the AI-generated text interpretation without interrupting SSE streaming
+- Built with Recharts (`ResponsiveContainer` + `LineChart`) — zero additional API calls
+
 ### AI Trend Insight (Trend Analysis modal)
 - Opening the Trend Analysis modal streams a Gemini-generated clinical interpretation of the selected metric's trajectory
 - Switches automatically when clicking a different metric tab (Glucose → A1C → Sodium → Potassium)
