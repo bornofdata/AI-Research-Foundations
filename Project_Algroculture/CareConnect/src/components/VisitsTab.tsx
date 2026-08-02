@@ -5,18 +5,17 @@ import {
   MapPin,
   Plus,
   CheckCircle2,
-  ChevronRight,
-  UserCheck,
-  Building,
+  ClipboardList,
 } from 'lucide-react';
 import { DR_EMILY_CHEN } from '../data/mockData';
 import { Appointment } from '../types';
 
 interface VisitsTabProps {
   appointments: Appointment[];
+  onPrepVisit: (appointment: Appointment) => void;
 }
 
-export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments }) => {
+export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onPrepVisit }) => {
   const [appointmentsList, setAppointmentsList] = useState<Appointment[]>(appointments);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(DR_EMILY_CHEN.name);
@@ -107,6 +106,13 @@ export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments }) => {
                 <MapPin className="w-4 h-4 text-outline shrink-0" />
                 <span className="truncate">{apt.location}</span>
               </div>
+
+              <button
+                onClick={() => onPrepVisit(apt)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary/30 text-primary text-xs font-bold hover:bg-primary-fixed/30 active:scale-95 transition-all"
+              >
+                <ClipboardList className="w-4 h-4" /> Prepare for Visit
+              </button>
             </div>
           ))}
       </section>

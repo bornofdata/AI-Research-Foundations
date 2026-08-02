@@ -1,49 +1,99 @@
-import React, { useState } from 'react';
-import { Send, User, CheckCircle2, Sparkles, MessageSquare } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Send, Sparkles } from 'lucide-react';
 import { DR_EMILY_CHEN, PATIENT_INFO } from '../data/mockData';
 import { Message } from '../types';
 
 interface InboxTabProps {
   messages: Message[];
+  patientContext: string;
 }
 
-export const InboxTab: React.FC<InboxTabProps> = ({ messages: initialMessages }) => {
+export const InboxTab: React.FC<InboxTabProps> = ({ messages: initialMessages, patientContext }) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [newMessageText, setNewMessageText] = useState('');
   const [isDoctorTyping, setIsDoctorTyping] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = (e: React.FormEvent) => {
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isDoctorTyping]);
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessageText.trim()) return;
+    if (!newMessageText.trim() || isDoctorTyping) return;
 
+    const sentText = newMessageText;
     const userMsg: Message = {
       id: `msg-${Date.now()}`,
       senderName: PATIENT_INFO.name,
       senderRole: 'Patient',
       senderAvatar: PATIENT_INFO.avatar,
-      text: newMessageText,
+      text: sentText,
       timestamp: 'Just now',
       isDoctor: false,
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setNewMessageText('');
-
-    // Doctor simulated response after 1.5 seconds
     setIsDoctorTyping(true);
-    setTimeout(() => {
-      setIsDoctorTyping(false);
-      const doctorReply: Message = {
-        id: `msg-doc-${Date.now()}`,
-        senderName: DR_EMILY_CHEN.name,
-        senderRole: DR_EMILY_CHEN.role,
-        senderAvatar: DR_EMILY_CHEN.avatar,
-        text: "Thank you for reaching out, Sarah! I have logged your message in your patient chart. Everything on your metabolic panel looks optimal, so please continue your current wellness plan.",
-        timestamp: 'Just now',
-        isDoctor: true,
-      };
-      setMessages((prev) => [...prev, doctorReply]);
-    }, 1500);
+
+    // Placeholder for streaming reply
+    const replyId = `msg-doc-${Date.now()}`;
+    // Small delay to mimic doctor reading time
+    await new Promise((r) => setTimeout(r, 800));
+
+    const replyPlaceholder: Message = {
+      id: replyId,
+      senderName: DR_EMILY_CHEN.name,
+      senderRole: DR_EMILY_CHEN.role,
+      senderAvatar: DR_EMILY_CHEN.avatar,
+      text: '',
+      timestamp: 'Just now',
+      isDoctor: true,
+    };
+    setMessages((prev) => [...prev, replyPlaceholder]);
+    setIsDoctorTyping(false);
+
+    try {
+      const res = await fetch('/api/doctor-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientMessage: sentText, patientContext }),
+      });
+      if (!res.body) throw new Error('No stream.');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const line of decoder.decode(value, { stream: true }).split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(payload) as { text?: string; error?: string };
+            if (parsed.text) {
+              accumulated += parsed.text;
+              setMessages((prev) =>
+                prev.map((m) => m.id === replyId ? { ...m, text: accumulated } : m)
+              );
+            }
+          } catch { /* partial chunk */ }
+        }
+      }
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === replyId
+            ? { ...m, text: 'Thank you for your message. I will review it and follow up with you shortly.' }
+            : m
+        )
+      );
+    }
   };
 
   return (
@@ -95,17 +145,35 @@ export const InboxTab: React.FC<InboxTabProps> = ({ messages: initialMessages })
                   <span className="font-bold">{msg.senderName}</span>
                   <span>{msg.timestamp}</span>
                 </div>
-                <p className="leading-relaxed font-normal">{msg.text}</p>
+                {msg.isDoctor && msg.text ? (
+                  <div className="leading-relaxed font-normal">
+                    <ReactMarkdown components={{
+                      p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    }}>
+                      {msg.text}
+                    </ReactMarkdown>
+                  </div>
+                ) : msg.isDoctor && !msg.text ? (
+                  <span className="inline-flex gap-1 py-0.5">
+                    {[0, 150, 300].map((d) => (
+                      <span key={d} className="w-1.5 h-1.5 bg-on-surface-variant/40 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                    ))}
+                  </span>
+                ) : (
+                  <p className="leading-relaxed font-normal">{msg.text}</p>
+                )}
               </div>
             </div>
           ))}
 
-          {/* Typing Indicator */}
+          {/* Typing Indicator (reading/thinking phase before stream starts) */}
           {isDoctorTyping && (
             <div className="flex gap-2 items-center text-xs text-on-surface-variant p-2 bg-surface-container rounded-xl w-fit animate-pulse">
-              <Sparkles className="w-3.5 h-3.5 text-secondary" /> {DR_EMILY_CHEN.name} is typing...
+              <Sparkles className="w-3.5 h-3.5 text-secondary" /> {DR_EMILY_CHEN.name} is reviewing your message…
             </div>
           )}
+          <div ref={bottomRef} />
         </div>
 
         {/* Message Form Input */}
@@ -119,7 +187,7 @@ export const InboxTab: React.FC<InboxTabProps> = ({ messages: initialMessages })
           />
           <button
             type="submit"
-            disabled={!newMessageText.trim()}
+            disabled={!newMessageText.trim() || isDoctorTyping}
             className="w-11 h-11 bg-primary text-on-primary rounded-full flex items-center justify-center shrink-0 shadow-md hover:bg-primary/95 disabled:opacity-40 transition-all active:scale-95"
           >
             <Send className="w-4 h-4" />

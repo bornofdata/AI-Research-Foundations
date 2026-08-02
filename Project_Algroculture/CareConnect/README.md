@@ -65,6 +65,43 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Completion celebration message when all meds are taken
 - State stored in `localStorage` keyed by date — resets automatically each day
 
+### AI Doctor Reply (Inbox tab)
+- Messages sent to Dr. Chen receive a real Gemini-generated response referencing the patient's actual health data
+- Shows "Dr. Chen is reviewing your message…" typing indicator, then streams the reply character by character
+- Response rendered with markdown formatting
+- Falls back to a polite static message if the AI call fails
+
+### AI Trend Insight (Trend Analysis modal)
+- Opening the Trend Analysis modal streams a Gemini-generated clinical interpretation of the selected metric's trajectory
+- Switches automatically when clicking a different metric tab (Glucose → A1C → Sodium → Potassium)
+- Results cached per metric in memory — no repeated API calls within the same session
+
+### Smart Health Alerts (Notifications panel)
+- On app load, Gemini analyzes the patient's full health record and generates 2 personalized, data-specific alerts
+- Alerts appear at the top of the notifications panel (bell icon) marked as unread
+- Non-blocking — runs silently after data loads, fails silently if the API is unavailable
+
+### PWA — Installable App
+- Full Progressive Web App setup: `manifest.json`, service worker, Apple/Android meta tags
+- "Add to Home Screen" works on both iOS Safari and Android Chrome
+- Service worker caches the app shell for offline loading
+- App icon (heart + ECG pulse SVG) and correct theme colour on the device status bar
+
+### Lab Report Photo Scan (Health tab)
+- "Scan Report" button at the top of the Health tab
+- Tap to upload a photo of any printed lab report (JPEG/PNG/WEBP, max 5 MB)
+- Gemini vision AI extracts every individual test result: name, value, unit, reference range, and status
+- Results displayed in a structured card with colour-coded status badges (Normal / High / Low / Optimal / Review)
+- Camera capture supported on mobile (`capture="environment"` triggers rear camera)
+
+### Pre-Visit AI Summary (Visits tab)
+- "Prepare for Visit" button on every upcoming appointment card
+- Streams a structured AI prep document with four sections: Health Since Last Visit, Current Medications, Questions to Ask, What to Bring
+- Content is specific to the patient's actual lab values and the appointment type/doctor
+- Persisted to `localStorage` per appointment — reopening shows the same summary instantly, no extra API call
+- Refresh button to regenerate if health data has changed
+- Copy-to-clipboard button for sharing the summary before the appointment
+
 ### Chat History Persistence
 - **With Supabase:** history saved server-side per patient, persists across devices and sessions
 - **Without Supabase:** history saved to `localStorage`, persists per device
@@ -101,7 +138,12 @@ Frontend (React 19 + Vite + Tailwind CSS 4)
 Express AI Server (server.ts — port 3001)
 ├── POST /api/chat                 Streaming Gemini chat (SSE)
 ├── POST /api/health-brief         Streaming daily health summary (SSE)
-├── GET  /api/chat-history         Load persisted chat (requires Supabase + Clerk)
+├── POST /api/doctor-reply         Streaming AI reply as Dr. Chen (SSE)
+├── POST /api/trend-insight        Streaming metric trend analysis (SSE)
+├── POST /api/smart-alerts         AI-generated health alerts (JSON)
+├── POST /api/scan-report          Gemini vision — extract lab values from image (JSON)
+└── POST /api/visit-prep           Streaming pre-visit AI prep summary (SSE)
+├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn
 └── DELETE /api/chat-history       Clear chat history
 │

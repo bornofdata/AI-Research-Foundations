@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#003178"/>
+  <!-- Heart with pulse line -->
+  <path d="M256 360 C200 320 120 280 120 210 C120 170 150 140 190 140 C216 140 240 155 256 178 C272 155 296 140 322 140 C362 140 392 170 392 210 C392 280 312 320 256 360Z" fill="#ffffff" opacity="0.95"/>
+  <!-- ECG pulse line across heart -->
+  <polyline points="150,210 185,210 205,165 225,255 245,185 265,235 285,210 330,210" fill="none" stroke="#003178" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

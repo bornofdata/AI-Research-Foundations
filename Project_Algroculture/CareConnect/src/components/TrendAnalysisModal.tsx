@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, TrendingUp, Calendar, Download, Info, CheckCircle2 } from 'lucide-react';
 import { HISTORICAL_TRENDS } from '../data/mockData';
 import { LabReport } from '../types';
@@ -16,8 +16,9 @@ export const TrendAnalysisModal: React.FC<TrendAnalysisModalProps> = ({
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<'glucose' | 'a1c' | 'sodium' | 'potassium'>('glucose');
   const [timeRange, setTimeRange] = useState<'6m' | '1y'>('6m');
-
-  if (!isOpen) return null;
+  const [trendInsight, setTrendInsight] = useState<string>('');
+  const [insightLoading, setInsightLoading] = useState(false);
+  const insightCache = useRef<Record<string, string>>({});
 
   const metricMeta = {
     glucose: { name: 'Fasting Glucose', unit: 'mg/dL', target: '70 - 99 mg/dL', current: 94, trend: '-2% vs 6mo ago', color: '#003178' },
@@ -25,6 +26,67 @@ export const TrendAnalysisModal: React.FC<TrendAnalysisModalProps> = ({
     sodium: { name: 'Sodium', unit: 'mmol/L', target: '135 - 145 mmol/L', current: 140, trend: 'Stable', color: '#0d47a1' },
     potassium: { name: 'Potassium', unit: 'mmol/L', target: '3.5 - 5.1 mmol/L', current: 4.2, trend: '+0.2 vs 6mo ago', color: '#045142' },
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (insightCache.current[selectedMetric]) {
+      setTrendInsight(insightCache.current[selectedMetric]);
+      return;
+    }
+
+    const meta = metricMeta[selectedMetric];
+    const dataPoints = HISTORICAL_TRENDS.map((t) => ({ date: t.date, value: t[selectedMetric] }));
+
+    setInsightLoading(true);
+    setTrendInsight('');
+
+    fetch('/api/trend-insight', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        metricName: meta.name,
+        unit: meta.unit,
+        referenceRange: meta.target,
+        dataPoints,
+      }),
+    })
+      .then((res) => {
+        if (!res.body) throw new Error('No stream.');
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+
+        const pump = (): Promise<void> =>
+          reader.read().then(({ done, value }) => {
+            if (done) {
+              insightCache.current[selectedMetric] = accumulated;
+              setInsightLoading(false);
+              return;
+            }
+            for (const line of decoder.decode(value, { stream: true }).split('\n')) {
+              if (!line.startsWith('data: ')) continue;
+              const payload = line.slice(6).trim();
+              if (payload === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(payload) as { text?: string };
+                if (parsed.text) {
+                  accumulated += parsed.text;
+                  setTrendInsight(accumulated);
+                }
+              } catch { /* partial */ }
+            }
+            return pump();
+          });
+
+        return pump();
+      })
+      .catch(() => {
+        setTrendInsight('Unable to load AI insight. Please try again.');
+        setInsightLoading(false);
+      });
+  }, [selectedMetric, isOpen]);
+
+  if (!isOpen) return null;
 
   const currentMeta = metricMeta[selectedMetric];
 
@@ -175,12 +237,17 @@ export const TrendAnalysisModal: React.FC<TrendAnalysisModalProps> = ({
             </div>
           </div>
 
-          {/* Clinical Insight Note */}
+          {/* AI Clinical Insight */}
           <div className="p-3 bg-secondary-container/50 border border-secondary-fixed rounded-xl flex gap-3 items-start text-xs text-on-secondary-container">
             <Info className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
-            <p>
-              Your {currentMeta.name.toLowerCase()} readings remain well within normal medical target limits. Regular lifestyle and balanced nutrition support this ongoing stability.
-            </p>
+            {insightLoading && !trendInsight ? (
+              <div className="flex items-center gap-2 text-on-surface-variant">
+                <div className="w-3 h-3 border border-secondary border-t-transparent rounded-full animate-spin shrink-0" />
+                Analyzing trend…
+              </div>
+            ) : (
+              <p className="leading-relaxed">{trendInsight}</p>
+            )}
           </div>
         </div>
 

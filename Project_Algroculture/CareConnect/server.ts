@@ -177,6 +177,251 @@ ${patientContext}` }],
   }
 });
 
+// ── POST /api/doctor-reply ────────────────────────────────────
+// Generate an AI reply from Dr. Emily Chen based on patient message + context.
+app.post('/api/doctor-reply', async (req, res) => {
+  const { patientMessage, patientContext } = req.body as {
+    patientMessage: string;
+    patientContext: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are Dr. Emily Chen, the patient's Primary Physician. The patient has sent you a message through their health portal.
+
+Patient health record for context:
+${patientContext}
+
+Patient's message: "${patientMessage}"
+
+Reply as Dr. Chen — warm, professional, and specific to their actual health data when relevant. Keep the reply to 2-3 sentences. End with a short encouraging note or next step. Do not introduce yourself.` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
+// ── POST /api/trend-insight ───────────────────────────────────
+// Generate an AI interpretation of a specific lab metric trend.
+app.post('/api/trend-insight', async (req, res) => {
+  const { metricName, unit, referenceRange, dataPoints } = req.body as {
+    metricName: string;
+    unit: string;
+    referenceRange: string;
+    dataPoints: { date: string; value: number }[];
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const series = dataPoints.map((p) => `${p.date}: ${p.value} ${unit}`).join(', ');
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `Analyze this lab metric trend and write one concise clinical insight (2 sentences max). Be specific about the direction of the trend, what it means, and one actionable takeaway. Use plain language — no jargon.
+
+Metric: ${metricName}
+Reference range: ${referenceRange}
+Historical readings (oldest → newest): ${series}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
+// ── POST /api/smart-alerts ────────────────────────────────────
+// Generate 2-3 AI-powered health alerts from the patient's record.
+app.post('/api/smart-alerts', async (req, res) => {
+  const { patientContext } = req.body as { patientContext: string };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.json({ alerts: [] }); return; }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `Based on this patient's health record, generate exactly 2 personalized health alerts for their notification feed. Be specific to their actual values — avoid generic advice. Do not repeat what the physician already noted.
+
+Return ONLY a valid JSON array — no markdown, no code fences:
+[{"title":"...","description":"...","type":"lab"}]
+
+Valid types: "lab", "appointment", "message"
+Keep each description under 18 words and make it actionable.
+
+PATIENT RECORD:
+${patientContext}` }],
+      }],
+    });
+
+    const raw = response.text ?? '[]';
+    const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    const alerts = JSON.parse(cleaned) as Array<{ title: string; description: string; type: string }>;
+    res.json({ alerts });
+  } catch {
+    res.json({ alerts: [] });
+  }
+});
+
+// ── POST /api/scan-report ─────────────────────────────────────
+// Extract lab values from an uploaded image using Gemini vision.
+app.post('/api/scan-report', async (req, res) => {
+  const { imageBase64, mimeType } = req.body as {
+    imageBase64: string;
+    mimeType: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+  if (!imageBase64 || !mimeType) { res.status(400).json({ error: 'imageBase64 and mimeType are required.' }); return; }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [
+          {
+            inlineData: { mimeType, data: imageBase64 },
+          },
+          {
+            text: `Extract all lab test results from this image.
+
+Return ONLY valid JSON — no markdown, no code fences:
+{
+  "title": "report name (e.g. Comprehensive Metabolic Panel)",
+  "date": "date string as shown on report or 'Unknown'",
+  "labLocation": "lab name if visible or 'Unknown Lab'",
+  "parameters": [
+    {
+      "name": "test name",
+      "value": "numeric or string value",
+      "unit": "unit (e.g. mg/dL)",
+      "referenceRange": "low-high range as shown or ''",
+      "status": "normal|high|low|optimal|review",
+      "statusLabel": "Normal|High|Low|Optimal|Review"
+    }
+  ]
+}
+
+If a value is outside the reference range, mark it as "high" or "low". If clearly within range, use "normal" or "optimal". If borderline, use "review". Extract every individual test result shown.`,
+          },
+        ],
+      }],
+    });
+
+    const raw = response.text ?? '{}';
+    const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    const result = JSON.parse(cleaned);
+    res.json({ report: result });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Extraction failed.';
+    res.status(500).json({ error: message });
+  }
+});
+
+// ── POST /api/visit-prep ──────────────────────────────────────
+// Generate a pre-visit AI summary for an upcoming appointment.
+app.post('/api/visit-prep', async (req, res) => {
+  const { patientContext, appointmentType, doctorName } = req.body as {
+    patientContext: string;
+    appointmentType: string;
+    doctorName: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [{
+        role: 'user',
+        parts: [{ text: `You are helping a patient prepare for their upcoming "${appointmentType}" appointment with ${doctorName}.
+
+Based on their health record below, generate a concise pre-visit preparation summary with these exact sections:
+
+**Health Since Last Visit**
+(2-3 bullets on notable changes or trends in their lab values)
+
+**Current Medications**
+(bullet list of active medications — name and dosage only)
+
+**Questions to Ask ${doctorName}**
+(3-4 specific, intelligent questions based on their actual data)
+
+**What to Bring**
+(2-3 practical items — insurance card, list of symptoms, specific report, etc.)
+
+Keep it focused and useful. Use plain language.
+
+PATIENT RECORD:
+${patientContext}` }],
+      }],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── GET /api/chat-history ─────────────────────────────────────
 // Load persisted chat history for the authenticated patient.
 app.get('/api/chat-history', async (req, res) => {

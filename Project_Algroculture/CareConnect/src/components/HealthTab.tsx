@@ -8,8 +8,7 @@ import {
   Sparkles,
   Download,
   History,
-  CheckCircle,
-  ExternalLink,
+  ScanLine,
 } from 'lucide-react';
 import { LabReport } from '../types';
 
@@ -18,6 +17,7 @@ interface HealthTabProps {
   onOpenPdf: (report: LabReport) => void;
   onOpenTrends: (report: LabReport) => void;
   onOpenAskFollowUp: (report: LabReport) => void;
+  onOpenScan: () => void;
 }
 
 export const HealthTab: React.FC<HealthTabProps> = ({
@@ -25,6 +25,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
   onOpenPdf,
   onOpenTrends,
   onOpenAskFollowUp,
+  onOpenScan,
 }) => {
   const [selectedReportId, setSelectedReportId] = useState<string>(labReports[0]?.id ?? '');
   const [copiedToast, setCopiedToast] = useState(false);
@@ -48,9 +49,17 @@ export const HealthTab: React.FC<HealthTabProps> = ({
 
       {/* Section: Chronological Recent Tests */}
       <section className="mb-6">
-        <h2 className="font-headline-md text-xl font-bold text-on-surface mb-3 tracking-tight">
-          Recent Reports
-        </h2>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-headline-md text-xl font-bold text-on-surface tracking-tight">
+            Recent Reports
+          </h2>
+          <button
+            onClick={onOpenScan}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary-container text-on-secondary-container text-xs font-bold rounded-full hover:bg-secondary/20 transition-colors active:scale-95"
+          >
+            <ScanLine className="w-3.5 h-3.5" /> Scan Report
+          </button>
+        </div>
         <div className="flex gap-3 overflow-x-auto scroll-hide pb-2">
           {labReports.map((report) => {
             const isSelected = report.id === selectedReportId;

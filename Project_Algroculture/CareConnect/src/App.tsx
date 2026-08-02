@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { buildPatientContext } from './lib/buildPatientContext';
@@ -14,9 +14,11 @@ import { PdfReportModal } from './components/PdfReportModal';
 import { AskFollowUpModal } from './components/AskFollowUpModal';
 import { AIChatModal } from './components/AIChatModal';
 import { NotificationsModal } from './components/NotificationsModal';
+import { ScanReportModal } from './components/ScanReportModal';
+import { VisitPrepModal } from './components/VisitPrepModal';
 import { SignInPage } from './components/SignInPage';
 import { usePatientData } from './hooks/usePatientData';
-import { TabType, LabReport, NotificationItem } from './types';
+import { TabType, LabReport, Appointment, NotificationItem } from './types';
 
 const clerkEnabled = !!(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
@@ -32,6 +34,40 @@ function AppShell() {
   const [activeAskFollowUpReport, setActiveAskFollowUpReport] = useState<LabReport | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiChatReport, setAiChatReport] = useState<LabReport | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [prepAppointment, setPrepAppointment] = useState<Appointment | null>(null);
+
+  // Build patient context once; passed to AI-powered components
+  const patientContext = useMemo(
+    () => buildPatientContext(undefined, medications, historicalTrends),
+    [medications, historicalTrends],
+  );
+
+  // Load AI-generated smart alerts once after data is ready
+  const alertsFetched = useRef(false);
+  useEffect(() => {
+    if (loading || alertsFetched.current) return;
+    alertsFetched.current = true;
+    fetch('/api/smart-alerts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patientContext }),
+    })
+      .then((r) => r.json())
+      .then(({ alerts }) => {
+        if (!Array.isArray(alerts) || alerts.length === 0) return;
+        const aiNotifications: NotificationItem[] = alerts.map((a, i) => ({
+          id: `ai-alert-${i}`,
+          title: a.title,
+          description: a.description,
+          time: 'AI · Just now',
+          read: false,
+          type: (a.type as NotificationItem['type']) ?? 'lab',
+        }));
+        setNotifications((prev) => [...aiNotifications, ...prev]);
+      })
+      .catch(() => { /* non-fatal */ });
+  }, [loading, patientContext]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -67,6 +103,7 @@ function AppShell() {
           onOpenPdf={(report) => setActivePdfReport(report)}
           onOpenTrends={(report) => setActiveTrendReport(report)}
           onOpenAskFollowUp={(report) => openAIChat(report)}
+          onOpenScan={() => setScanOpen(true)}
         />
       )}
       {activeTab === 'home' && (
@@ -75,11 +112,16 @@ function AppShell() {
           appointments={appointments}
           labReports={labReports}
           onNavigateToTab={setActiveTab}
-          patientContext={buildPatientContext(undefined, medications, historicalTrends)}
+          patientContext={patientContext}
         />
       )}
-      {activeTab === 'visits' && <VisitsTab appointments={appointments} />}
-      {activeTab === 'inbox' && <InboxTab messages={messages} />}
+      {activeTab === 'visits' && (
+        <VisitsTab
+          appointments={appointments}
+          onPrepVisit={(apt) => setPrepAppointment(apt)}
+        />
+      )}
+      {activeTab === 'inbox' && <InboxTab messages={messages} patientContext={patientContext} />}
       {activeTab === 'more' && <MoreTab patient={patient} medications={medications} />}
 
       {/* Global AI FAB */}
@@ -133,6 +175,17 @@ function AppShell() {
         medications={medications}
         historicalTrends={historicalTrends}
       />
+
+      <ScanReportModal isOpen={scanOpen} onClose={() => setScanOpen(false)} />
+
+      {prepAppointment && (
+        <VisitPrepModal
+          isOpen={!!prepAppointment}
+          onClose={() => setPrepAppointment(null)}
+          appointment={prepAppointment}
+          patientContext={patientContext}
+        />
+      )}
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
