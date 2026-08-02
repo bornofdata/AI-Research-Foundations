@@ -38,6 +38,20 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 
 ## Features
 
+### Manual Vital Signs Logging (Home tab)
+- "Log Reading" button in the "My Vitals" section opens a modal to enter blood pressure, heart rate, blood glucose, weight, and SpO2
+- Fields are all optional — patients fill whichever readings they have
+- Out-of-range values show an inline warning but do not block saving
+- Readings stored in `localStorage` under `careconnect_vitals`; Home tab refreshes instantly on save
+- Metric tiles display the latest value, color-coded status (green/amber/red) based on clinical thresholds:
+  - Systolic BP: <120 green, 120–139 amber, ≥140 red
+  - Diastolic BP: <80 green, 80–89 amber, ≥90 red
+  - Heart Rate: 60–100 green, else amber
+  - Blood Glucose: <100 green, 100–125 amber, ≥126 red
+  - SpO2: ≥95 green, 90–94 amber, <90 red
+  - Weight: neutral (no threshold)
+- Mini sparkline trend line per metric (last 7 readings) using Recharts
+
 ### Health Timeline (Home tab)
 - "View Health Timeline" quick-action button on the Home tab opens a full-screen timeline modal
 - Unified chronological feed of all health events sorted newest first

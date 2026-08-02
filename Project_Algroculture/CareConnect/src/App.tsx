@@ -18,6 +18,7 @@ import { ScanReportModal } from './components/ScanReportModal';
 import { VisitPrepModal } from './components/VisitPrepModal';
 import { AppointmentRequestModal } from './components/AppointmentRequestModal';
 import { SymptomLogModal } from './components/SymptomLogModal';
+import { VitalsLogModal } from './components/VitalsLogModal';
 import { TimelineModal } from './components/TimelineModal';
 import { LabCompareModal } from './components/LabCompareModal';
 import { SignInPage } from './components/SignInPage';
@@ -49,6 +50,8 @@ function AppShell() {
   const [prepAppointment, setPrepAppointment] = useState<Appointment | null>(null);
   const [symptomLogOpen, setSymptomLogOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [vitalsLogOpen, setVitalsLogOpen] = useState(false);
+  const [vitalsRefreshKey, setVitalsRefreshKey] = useState(0);
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
   const [apptRequestOpen, setApptRequestOpen] = useState(false);
 
@@ -159,6 +162,8 @@ function AppShell() {
           patientContext={patientContext}
           onOpenSymptomLog={() => setSymptomLogOpen(true)}
           onOpenTimeline={() => setTimelineOpen(true)}
+          onOpenVitalsLog={() => setVitalsLogOpen(true)}
+          vitalsRefreshKey={vitalsRefreshKey}
         />
       )}
       {activeTab === 'visits' && (
@@ -230,6 +235,11 @@ function AppShell() {
         labReports={labReports}
       />
       <SymptomLogModal isOpen={symptomLogOpen} onClose={() => setSymptomLogOpen(false)} />
+      <VitalsLogModal
+        isOpen={vitalsLogOpen}
+        onClose={() => setVitalsLogOpen(false)}
+        onSaved={() => { setVitalsRefreshKey((k) => k + 1); setVitalsLogOpen(false); }}
+      />
       <TimelineModal
         isOpen={timelineOpen}
         onClose={() => setTimelineOpen(false)}

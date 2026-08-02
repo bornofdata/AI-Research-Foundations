@@ -12,6 +12,7 @@ import {
 import { TabType, Appointment, LabReport } from '../types';
 import { AIHealthBrief } from './AIHealthBrief';
 import { HealthGoals } from './HealthGoals';
+import { MyVitals } from './MyVitals';
 
 interface PatientProfile { name: string; }
 
@@ -23,6 +24,8 @@ interface HomeTabProps {
   patientContext: string;
   onOpenSymptomLog: () => void;
   onOpenTimeline: () => void;
+  onOpenVitalsLog: () => void;
+  vitalsRefreshKey: number;
 }
 
 function computeHealthScore(labReports: LabReport[]) {
@@ -37,7 +40,7 @@ function computeHealthScore(labReports: LabReport[]) {
   return { score, label, color, ring };
 }
 
-export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline }) => {
+export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labReports, onNavigateToTab, patientContext, onOpenSymptomLog, onOpenTimeline, onOpenVitalsLog, vitalsRefreshKey }) => {
   const nextAppointment = appointments.find((a) => a.status === 'upcoming');
   const healthScore = computeHealthScore(labReports);
 
@@ -156,6 +159,9 @@ export const HomeTab: React.FC<HomeTabProps> = ({ patient, appointments, labRepo
           </button>
         </div>
       </section>
+
+      {/* My Vitals — patient self-reported readings */}
+      <MyVitals onOpenLog={onOpenVitalsLog} refreshKey={vitalsRefreshKey} />
 
       {/* Vitals Summary + Health Score */}
       <section className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant space-y-3">
