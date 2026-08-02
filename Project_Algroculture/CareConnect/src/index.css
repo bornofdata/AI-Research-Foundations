@@ -101,12 +101,38 @@ body {
   box-shadow: 0 16px 24px -12px rgba(0, 49, 120, 0.08);
 }
 
-.scroll-hide::-webkit-scrollbar {
+.scroll-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.scroll-hide {
+.scroll-hide,
+.no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out both;
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.animate-slideLeft {
+  animation: slideLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.animate-slideUp {
+  animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .range-indicator {

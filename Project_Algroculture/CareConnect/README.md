@@ -38,6 +38,15 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 
 ## Features
 
+### Health Timeline (Home tab)
+- "View Health Timeline" quick-action button on the Home tab opens a full-screen timeline modal
+- Unified chronological feed of all health events sorted newest first
+- Covers: lab results, appointments, doctor messages, symptom log entries, and active medications
+- Filter by event type: All | Labs | Appointments | Messages | Symptoms | Medications
+- Color-coded event dots per category (Labs → primary blue, Appointments → secondary teal, Messages → emerald, Symptoms → amber, Medications → purple)
+- Slide-up animation; smooth scroll through long histories
+- Symptom log entries loaded live from `localStorage` (`careconnect_symptom_log`)
+
 ### AI Chat Assistant
 - Streaming AI responses via Google Gemini (`gemini-flash-latest`)
 - Opened from any tab via the global floating "Ask AI" button

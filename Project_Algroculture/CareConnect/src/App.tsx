@@ -127,6 +127,7 @@ function AppShell() {
           onNavigateToTab={setActiveTab}
           patientContext={patientContext}
           onOpenSymptomLog={() => setSymptomLogOpen(true)}
+          onOpenTimeline={() => setTimelineOpen(true)}
         />
       )}
       {activeTab === 'visits' && (
@@ -197,6 +198,14 @@ function AppShell() {
         labReports={labReports}
       />
       <SymptomLogModal isOpen={symptomLogOpen} onClose={() => setSymptomLogOpen(false)} />
+      <TimelineModal
+        isOpen={timelineOpen}
+        onClose={() => setTimelineOpen(false)}
+        labReports={labReports}
+        appointments={appointments}
+        messages={messages}
+        medications={medications}
+      />
 
       {prepAppointment && (
         <VisitPrepModal
