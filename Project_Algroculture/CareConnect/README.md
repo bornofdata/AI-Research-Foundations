@@ -38,6 +38,15 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 
 ## Features
 
+### AI Second Opinion (Health tab)
+- Request a deep clinical interpretation of any lab report via the "AI Second Opinion" button on each report card
+- AI reviews all parameters together as a clinical picture — not in isolation
+- 6 structured sections: Clinical Summary, Key Findings, Patterns & Correlations, Areas of Concern, What to Discuss with Your Doctor, Reassuring Signs
+- Each section has a color-coded dot indicator (primary blue, secondary, purple, amber, emerald) for quick visual scanning
+- Patterns & Correlations section identifies cross-parameter insights (e.g., glucose + A1C together, sodium + kidney function)
+- Copy-to-clipboard and refresh buttons; results cached per report in memory within the session
+- Full-screen modal with streamed markdown rendering and a 4-line skeleton loading state
+
 ### Weekly Health Insights Report (Home tab)
 - AI-generated weekly summary aggregating vitals logged, symptoms recorded, medication adherence, and lab data into a structured report card
 - Tabbed sections: Overview (Week in Review) | Wins (What Went Well) | Watch (Areas to Watch) | Priority (This Week's Priority + Looking Ahead)
@@ -295,7 +304,8 @@ Express AI Server (server.ts — port 3001)
 ├── POST /api/suggest-goals        AI-generated health goals (JSON)
 ├── POST /api/symptom-check        Streaming clinical triage assessment from symptom description (SSE)
 ├── POST /api/vaccine-recommendations  AI-personalized vaccine recommendations (JSON)
-└── POST /api/weekly-report        Streaming weekly health insights report (SSE)
+├── POST /api/weekly-report        Streaming weekly health insights report (SSE)
+└── POST /api/second-opinion       Streaming deep clinical second opinion on a lab report (SSE)
 ├── GET  /api/chat-history         Load persisted chat (Supabase + Clerk required)
 ├── POST /api/chat-history         Save a chat turn
 └── DELETE /api/chat-history       Clear chat history

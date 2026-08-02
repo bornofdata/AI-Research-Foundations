@@ -16,6 +16,7 @@ import { AIChatModal } from './components/AIChatModal';
 import { NotificationsModal } from './components/NotificationsModal';
 import { ScanReportModal } from './components/ScanReportModal';
 import { VisitPrepModal } from './components/VisitPrepModal';
+import { SecondOpinionModal } from './components/SecondOpinionModal';
 import { AppointmentRequestModal } from './components/AppointmentRequestModal';
 import { SymptomLogModal } from './components/SymptomLogModal';
 import { SymptomCheckerModal } from './components/SymptomCheckerModal';
@@ -56,6 +57,7 @@ function AppShell() {
   const [vitalsRefreshKey, setVitalsRefreshKey] = useState(0);
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
   const [apptRequestOpen, setApptRequestOpen] = useState(false);
+  const [secondOpinionReport, setSecondOpinionReport] = useState<LabReport | null>(null);
 
   // Build patient context once; passed to AI-powered components
   const patientContext = useMemo(
@@ -153,6 +155,7 @@ function AppShell() {
           onOpenAskFollowUp={(report) => openAIChat(report)}
           onOpenScan={() => setScanOpen(true)}
           onOpenCompare={() => setCompareOpen(true)}
+          onOpenSecondOpinion={(report) => setSecondOpinionReport(report)}
         />
       )}
       {activeTab === 'home' && (
@@ -275,6 +278,13 @@ function AppShell() {
           patientContext={patientContext}
         />
       )}
+
+      <SecondOpinionModal
+        isOpen={!!secondOpinionReport}
+        onClose={() => setSecondOpinionReport(null)}
+        report={secondOpinionReport}
+        patientContext={patientContext}
+      />
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>

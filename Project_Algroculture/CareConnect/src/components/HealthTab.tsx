@@ -10,6 +10,7 @@ import {
   History,
   ScanLine,
   GitCompare,
+  Microscope,
 } from 'lucide-react';
 import { LabReport } from '../types';
 
@@ -20,6 +21,7 @@ interface HealthTabProps {
   onOpenAskFollowUp: (report: LabReport) => void;
   onOpenScan: () => void;
   onOpenCompare: () => void;
+  onOpenSecondOpinion: (report: LabReport) => void;
 }
 
 export const HealthTab: React.FC<HealthTabProps> = ({
@@ -29,6 +31,7 @@ export const HealthTab: React.FC<HealthTabProps> = ({
   onOpenAskFollowUp,
   onOpenScan,
   onOpenCompare,
+  onOpenSecondOpinion,
 }) => {
   const [selectedReportId, setSelectedReportId] = useState<string>(labReports[0]?.id ?? '');
   const [copiedToast, setCopiedToast] = useState(false);
@@ -262,6 +265,12 @@ export const HealthTab: React.FC<HealthTabProps> = ({
           className="h-[52px] border-2 border-outline-variant text-primary hover:bg-surface-container rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-colors active:scale-95"
         >
           <History className="w-5 h-5" /> View Trend Analysis
+        </button>
+        <button
+          onClick={() => onOpenSecondOpinion(activeReport)}
+          className="flex items-center justify-center gap-1 px-3 py-1.5 text-[11px] font-bold rounded-full border border-secondary/40 text-secondary hover:bg-secondary-container/40 transition-colors h-[52px]"
+        >
+          <Microscope className="w-4 h-4" /> AI Second Opinion
         </button>
       </div>
     </main>

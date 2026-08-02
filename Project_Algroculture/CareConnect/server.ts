@@ -866,6 +866,76 @@ Recommend vaccines for this patient: ${patientContext}`,
   }
 });
 
+// ── POST /api/second-opinion ─────────────────────────────────
+// Stream a deep clinical second opinion on a lab report.
+app.post('/api/second-opinion', async (req, res) => {
+  const { reportName, reportDate, parameters, patientContext } = req.body as {
+    reportName: string;
+    reportDate: string;
+    parameters: Array<{ name: string; value: string; unit: string; referenceRange: string; status: string }>;
+    patientContext: string;
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'No API key.' }); return; }
+  if (!reportName || !Array.isArray(parameters) || parameters.length === 0) {
+    res.status(400).json({ error: 'reportName and parameters are required.' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const systemPrompt = `You are an experienced internal medicine physician providing a second opinion on a patient's lab report.
+Review all parameters together as a clinical picture, not in isolation.
+
+Structure your response with these exact markdown headings:
+
+## Clinical Summary
+## Key Findings
+## Patterns & Correlations
+## Areas of Concern
+## What to Discuss with Your Doctor
+## Reassuring Signs
+
+Under "Clinical Summary": 2-3 sentences giving an overall impression of this report.
+Under "Key Findings": Bullet list of the most significant values, with clinical context.
+Under "Patterns & Correlations": How different values relate to each other (e.g., glucose + A1C together, sodium + kidney function). This is the most valuable section — identify at least 1-2 cross-parameter insights.
+Under "Areas of Concern": Values or patterns warranting follow-up. Be specific (reference actual numbers).
+Under "What to Discuss with Your Doctor": 3-4 specific questions the patient should bring to their next appointment.
+Under "Reassuring Signs": 2-3 values or patterns that look healthy or have improved.
+
+Reference actual values throughout. Be thorough but accessible. End with:
+*This AI second opinion is for educational purposes only and does not replace professional medical advice.*`;
+
+    const userMessage = `Second opinion request for: ${reportName} (${reportDate})\n\nLab values:\n${parameters.map((p) => `- ${p.name}: ${p.value} ${p.unit} (ref: ${p.referenceRange}) — ${p.status}`).join('\n')}\n\nPatient context: ${patientContext}`;
+
+    const response = await ai.models.generateContentStream({
+      model: MODEL,
+      contents: [
+        { role: 'user', parts: [{ text: `SYSTEM INSTRUCTIONS:\n${systemPrompt}\n\nAcknowledge that you understand and are ready to provide the second opinion.` }] },
+        { role: 'model', parts: [{ text: "Understood. I'm ready to provide a thorough clinical second opinion on the lab report." }] },
+        { role: 'user', parts: [{ text: userMessage }] },
+      ],
+    });
+
+    for await (const chunk of response) {
+      if (chunk.text) res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error.';
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 // ── GET /api/chat-history ─────────────────────────────────────
 // Load persisted chat history for the authenticated patient.
 app.get('/api/chat-history', async (req, res) => {
