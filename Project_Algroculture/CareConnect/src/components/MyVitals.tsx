@@ -67,10 +67,10 @@ const METRICS: MetricConfig[] = [
 ];
 
 const STATUS_COLORS = {
-  green: { stroke: '#286959', bg: 'bg-emerald-50 dark:bg-emerald-950/30', badge: 'text-emerald-700 dark:text-emerald-400', label: 'Normal' },
-  amber: { stroke: '#d97706', bg: 'bg-amber-50 dark:bg-amber-950/30', badge: 'text-amber-700 dark:text-amber-400', label: 'Review' },
-  red: { stroke: '#ba1a1a', bg: 'bg-red-50 dark:bg-red-950/30', badge: 'text-red-700 dark:text-red-400', label: 'High' },
-  neutral: { stroke: '#003178', bg: 'bg-surface-container', badge: 'text-on-surface-variant', label: '' },
+  green:   { stroke: '#16a34a', bg: 'bg-surface-container-lowest', valueColor: 'text-emerald-600', badgeBg: 'bg-emerald-100 text-emerald-800', label: 'Normal' },
+  amber:   { stroke: '#d97706', bg: 'bg-surface-container-lowest', valueColor: 'text-amber-600',   badgeBg: 'bg-amber-100 text-amber-800',   label: 'Review' },
+  red:     { stroke: '#dc2626', bg: 'bg-surface-container-lowest', valueColor: 'text-red-600',     badgeBg: 'bg-red-100 text-red-800',       label: 'High'   },
+  neutral: { stroke: '#4a6fa5', bg: 'bg-surface-container-lowest', valueColor: 'text-on-surface',  badgeBg: '',                              label: ''       },
 };
 
 function relativeDate(isoDate: string): string {
@@ -195,21 +195,23 @@ export const MyVitals: React.FC<MyVitalsProps> = ({ onOpenLog, refreshKey }) => 
           return (
             <div
               key={metric.field}
-              className={`rounded-2xl p-3.5 border border-outline-variant/60 ${colors.bg} space-y-1.5`}
+              className={`rounded-2xl p-3.5 border border-outline-variant ${colors.bg} space-y-1.5`}
             >
               <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wide">
                 {metric.label}
               </p>
-              <div className="flex items-end justify-between">
+              <div className="flex items-end justify-between gap-1">
                 <div>
-                  <span className={`text-xl font-bold leading-none ${colors.badge}`}>
-                    {latestValue}
-                  </span>
-                  <span className="text-[10px] text-on-surface-variant ml-1">{metric.unit}</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-xl font-bold leading-none ${colors.valueColor}`}>
+                      {latestValue}
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant">{metric.unit}</span>
+                  </div>
                   {colors.label && (
-                    <p className={`text-[10px] font-semibold mt-0.5 ${colors.badge}`}>
+                    <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1 ${colors.badgeBg}`}>
                       {colors.label}
-                    </p>
+                    </span>
                   )}
                 </div>
                 {sparklineData.length > 1 && (
