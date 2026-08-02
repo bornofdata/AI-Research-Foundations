@@ -11,10 +11,19 @@ import {
   CheckCircle2,
   Circle,
   NotebookPen,
+  Sun,
+  Moon,
+  HeartPulse,
+  Pencil,
+  Copy,
+  Check,
+  X,
 } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { Medication } from '../types';
 import { loadSymptomLog } from './SymptomLogModal';
+import { MedicationReminders } from './MedicationReminders';
+import { useMedicationReminders } from '../hooks/useMedicationReminders';
 
 const todayKey = () => `careconnect_meds_${new Date().toISOString().split('T')[0]}`;
 
@@ -29,6 +38,201 @@ function saveAdherence(state: Record<string, boolean>) {
   localStorage.setItem(todayKey(), JSON.stringify(state));
 }
 
+// ─── Emergency Card ───────────────────────────────────────────────────────────
+
+interface EmergencyCard {
+  bloodType: string;
+  allergies: string;
+  conditions: string;
+  emergencyName: string;
+  emergencyPhone: string;
+}
+
+const EMERGENCY_CARD_KEY = 'careconnect_emergency_card';
+
+const DEFAULT_EMERGENCY_CARD: EmergencyCard = {
+  bloodType: 'A+',
+  allergies: 'None known',
+  conditions: 'Pre-diabetic (managed)',
+  emergencyName: 'John Jenkins',
+  emergencyPhone: '555-0100',
+};
+
+function loadEmergencyCard(): EmergencyCard {
+  try {
+    const stored = localStorage.getItem(EMERGENCY_CARD_KEY);
+    return stored ? (JSON.parse(stored) as EmergencyCard) : DEFAULT_EMERGENCY_CARD;
+  } catch { return DEFAULT_EMERGENCY_CARD; }
+}
+
+function saveEmergencyCard(card: EmergencyCard) {
+  try { localStorage.setItem(EMERGENCY_CARD_KEY, JSON.stringify(card)); } catch { /* */ }
+}
+
+function EmergencyCardSection() {
+  const [card, setCard] = useState<EmergencyCard>(loadEmergencyCard);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<EmergencyCard>(card);
+  const [copied, setCopied] = useState(false);
+
+  const handleEdit = () => {
+    setDraft(card);
+    setEditing(true);
+  };
+
+  const handleSave = () => {
+    setCard(draft);
+    saveEmergencyCard(draft);
+    setEditing(false);
+  };
+
+  const handleCancel = () => setEditing(false);
+
+  const handleCopy = () => {
+    const summary = `Blood Type: ${card.bloodType} | Allergies: ${card.allergies} | Conditions: ${card.conditions} | Emergency Contact: ${card.emergencyName} (${card.emergencyPhone})`;
+    navigator.clipboard.writeText(summary).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => { /* clipboard unavailable */ });
+  };
+
+  return (
+    <section className="space-y-3">
+      {/* Section header */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold text-sm text-on-surface flex items-center gap-2">
+          <HeartPulse className="w-4 h-4 text-error" />
+          Emergency Info
+        </h2>
+        <div className="flex items-center gap-2">
+          {!editing && (
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1 text-[11px] font-semibold text-primary px-2.5 py-1 rounded-full bg-primary-fixed hover:bg-primary-fixed/70 transition-colors"
+              aria-label="Copy emergency summary"
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          )}
+          {!editing ? (
+            <button
+              onClick={handleEdit}
+              className="flex items-center gap-1 text-[11px] font-semibold text-on-surface-variant px-2.5 py-1 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors"
+              aria-label="Edit emergency card"
+            >
+              <Pencil className="w-3 h-3" /> Edit
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancel}
+                className="text-[11px] font-semibold text-on-surface-variant px-2.5 py-1 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="text-[11px] font-bold text-on-primary px-2.5 py-1 rounded-full bg-primary hover:bg-primary/90 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Card */}
+      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
+        {/* Blood type banner */}
+        <div className="bg-error/10 border-b border-outline-variant/40 px-5 py-3 flex items-center gap-3">
+          <span className="text-2xl font-extrabold text-error tracking-tight">
+            {editing ? (
+              <input
+                value={draft.bloodType}
+                onChange={(e) => setDraft({ ...draft, bloodType: e.target.value })}
+                className="w-16 text-2xl font-extrabold text-error bg-transparent border-b-2 border-error outline-none"
+                aria-label="Blood type"
+              />
+            ) : card.bloodType}
+          </span>
+          <div>
+            <p className="text-[10px] font-bold text-error uppercase tracking-wider">Blood Type</p>
+            <p className="text-[10px] text-on-surface-variant">Verified on file</p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Allergies */}
+          <div>
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Allergies</p>
+            {editing ? (
+              <input
+                value={draft.allergies}
+                onChange={(e) => setDraft({ ...draft, allergies: e.target.value })}
+                className="w-full text-sm text-on-surface bg-surface-container rounded-lg px-3 py-2 border border-outline-variant outline-none focus:border-primary"
+                aria-label="Allergies"
+              />
+            ) : (
+              <p className="text-sm font-medium text-on-surface">{card.allergies}</p>
+            )}
+          </div>
+
+          {/* Conditions */}
+          <div>
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Chronic Conditions</p>
+            {editing ? (
+              <input
+                value={draft.conditions}
+                onChange={(e) => setDraft({ ...draft, conditions: e.target.value })}
+                className="w-full text-sm text-on-surface bg-surface-container rounded-lg px-3 py-2 border border-outline-variant outline-none focus:border-primary"
+                aria-label="Chronic conditions"
+              />
+            ) : (
+              <p className="text-sm font-medium text-on-surface">{card.conditions}</p>
+            )}
+          </div>
+
+          {/* Emergency Contact */}
+          <div className="pt-2 border-t border-outline-variant/40">
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">Emergency Contact</p>
+            {editing ? (
+              <div className="space-y-2">
+                <input
+                  value={draft.emergencyName}
+                  onChange={(e) => setDraft({ ...draft, emergencyName: e.target.value })}
+                  placeholder="Contact name"
+                  className="w-full text-sm text-on-surface bg-surface-container rounded-lg px-3 py-2 border border-outline-variant outline-none focus:border-primary"
+                  aria-label="Emergency contact name"
+                />
+                <input
+                  value={draft.emergencyPhone}
+                  onChange={(e) => setDraft({ ...draft, emergencyPhone: e.target.value })}
+                  placeholder="Phone number"
+                  className="w-full text-sm text-on-surface bg-surface-container rounded-lg px-3 py-2 border border-outline-variant outline-none focus:border-primary"
+                  aria-label="Emergency contact phone"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-secondary-fixed rounded-xl">
+                  <PhoneCall className="w-4 h-4 text-secondary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">{card.emergencyName}</p>
+                  <p className="text-xs text-on-surface-variant">{card.emergencyPhone}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
 interface PatientProfile {
   name: string;
   avatar?: string;
@@ -40,13 +244,16 @@ interface PatientProfile {
 interface MoreTabProps {
   patient: PatientProfile;
   medications: Medication[];
+  isDark: boolean;
+  toggleTheme: () => void;
 }
 
-export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
+export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications, isDark, toggleTheme }) => {
   const { signOut } = useClerk();
   const activeMeds = medications.filter((m) => m.active);
   const [takenMeds, setTakenMeds] = useState<Record<string, boolean>>(loadAdherence);
   const recentLogs = loadSymptomLog().slice(0, 3);
+  const { dueAlerts, clearAlert } = useMedicationReminders();
 
   const toggleMed = (id: string) => {
     setTakenMeds((prev) => {
@@ -60,6 +267,32 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
 
   return (
     <main className="pt-20 pb-32 px-5 max-w-2xl mx-auto space-y-6 animate-fadeIn">
+      {/* Medication due-alert banners */}
+      {dueAlerts.length > 0 && (
+        <div className="space-y-2">
+          {dueAlerts.map((alert) => (
+            <div
+              key={alert.medName}
+              className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-lg shrink-0">💊</span>
+                <p className="text-sm font-semibold text-amber-900 truncate">
+                  Time to take your <span className="font-bold">{alert.medName}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => clearAlert(alert.medName)}
+                aria-label={`Dismiss reminder for ${alert.medName}`}
+                className="shrink-0 p-1.5 rounded-full hover:bg-amber-200 text-amber-700 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Patient Profile Card */}
       <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-xs flex items-center gap-4">
         {patient.avatar ? (
@@ -81,6 +314,9 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
           </span>
         </div>
       </div>
+
+      {/* Emergency Info Card */}
+      <EmergencyCardSection />
 
       {/* Insurance Coverage */}
       <section className="bg-gradient-to-r from-secondary-container/70 to-surface-container p-5 rounded-2xl border border-secondary-fixed space-y-2">
@@ -158,6 +394,9 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
         </section>
       )}
 
+      {/* Medication Reminders */}
+      <MedicationReminders medications={medications} />
+
       {/* Symptom Journal */}
       {recentLogs.length > 0 && (
         <section className="space-y-3">
@@ -196,6 +435,31 @@ export const MoreTab: React.FC<MoreTabProps> = ({ patient, medications }) => {
 
       {/* Menu Options */}
       <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant divide-y divide-outline-variant/40 overflow-hidden text-xs">
+        {/* Dark Mode Toggle */}
+        <div className="w-full p-4 flex items-center justify-between text-on-surface">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-surface-container rounded-xl text-primary">
+              {isDark ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </div>
+            <span className="font-semibold text-sm">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
+          </div>
+          <button
+            onClick={toggleTheme}
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Toggle dark mode"
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+              isDark ? 'bg-primary' : 'bg-outline-variant'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                isDark ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
         {[
           { icon: User, label: 'Personal Information & Medical History' },
           { icon: PhoneCall, label: 'Emergency Contacts & Caregivers' },

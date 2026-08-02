@@ -19,6 +19,8 @@ import { VisitPrepModal } from './components/VisitPrepModal';
 import { SymptomLogModal } from './components/SymptomLogModal';
 import { SignInPage } from './components/SignInPage';
 import { usePatientData } from './hooks/usePatientData';
+import { useTheme } from './hooks/useTheme';
+import { useMedicationReminders } from './hooks/useMedicationReminders';
 import { TabType, LabReport, Appointment, NotificationItem } from './types';
 
 const clerkEnabled = !!(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
@@ -27,6 +29,10 @@ function AppShell() {
   const { patientData, notificationState } = useAppData();
   const { patient, labReports, appointments, messages, medications, historicalTrends, loading } = patientData;
   const { notifications, setNotifications } = notificationState;
+  const { isDark, toggleTheme } = useTheme();
+
+  // Run the medication reminder interval globally so alerts fire on any tab
+  useMedicationReminders();
 
   const [activeTab, setActiveTab] = useState<TabType>('health');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -125,7 +131,7 @@ function AppShell() {
         />
       )}
       {activeTab === 'inbox' && <InboxTab messages={messages} patientContext={patientContext} />}
-      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} />}
+      {activeTab === 'more' && <MoreTab patient={patient} medications={medications} isDark={isDark} toggleTheme={toggleTheme} />}
 
       {/* Global AI FAB */}
       {!aiChatOpen && (

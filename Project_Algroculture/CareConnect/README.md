@@ -59,11 +59,31 @@ The app works with only `GEMINI_API_KEY` set. Clerk (auth) and Supabase (databas
 - Color-coded circular gauge: Excellent / Good / Fair / Needs Attention
 - Based on status weights: Optimal=100, Normal=85, Review=55, High/Low=45
 
+### Dark Mode (More tab)
+- Toggle between light and dark colour schemes from the More tab settings menu
+- Uses Material Design 3 dark palette — all colour tokens override via CSS custom properties on `<html class="dark">`
+- Preference persisted to `localStorage` (`careconnect_theme`) and restored on every page load
+- All Tailwind utilities (`bg-surface`, `text-on-surface`, etc.) automatically pick up the dark palette with no per-component changes
+
+### Emergency Health Card (More tab)
+- Prominent emergency info card displayed directly below the patient profile card
+- Shows blood type as a bold badge, allergies, chronic conditions, and emergency contact
+- "Edit" (pencil) button switches to inline edit mode with input fields for every field; "Save" persists changes
+- "Copy" button copies a one-line emergency summary to the clipboard (e.g. "Blood Type: A+ | Allergies: Penicillin | Emergency Contact: John Jenkins (555-0100)")
+- Data stored in `localStorage` under `careconnect_emergency_card`; defaults pre-populated for demo
+
 ### Medication Adherence Tracker (More tab)
 - Daily checklist of active medications — tap to mark taken
 - Progress shown as "X/Y taken" badge
 - Completion celebration message when all meds are taken
 - State stored in `localStorage` keyed by date — resets automatically each day
+
+### Medication Reminder Notifications (More tab)
+- Set a daily reminder time per medication via a time picker
+- Native browser notification at reminder time (requires permission grant)
+- In-app dismissible yellow alert banner even without notification permission
+- Reminder state tracked per day via `sessionStorage` to avoid duplicate alerts
+- Reminder times stored in `localStorage` under `careconnect_med_reminders`
 
 ### AI Doctor Reply (Inbox tab)
 - Messages sent to Dr. Chen receive a real Gemini-generated response referencing the patient's actual health data
@@ -148,7 +168,8 @@ Frontend (React 19 + Vite + Tailwind CSS 4)
 │   ├── queries.ts                 Typed Supabase query functions
 │   └── supabase.ts                Supabase client
 ├── src/hooks/
-│   └── usePatientData.ts          Loads from Supabase or falls back to mock
+│   ├── usePatientData.ts          Loads from Supabase or falls back to mock
+│   └── useTheme.ts                Dark/light mode toggle — persists to localStorage
 │
 Express AI Server (server.ts — port 3001)
 ├── POST /api/chat                 Streaming Gemini chat (SSE)
